@@ -1,5 +1,7 @@
+
 "use client"
 
+import { useEffect } from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -40,30 +42,54 @@ type GenerateScoreFormProps = {
   members: Member[];
   scoringCriteria: ScoringCriterion[];
   onScoresCalculated: (scoreInfo: ScoreInfo) => void;
+  existingReport?: ScoreInfo | null;
 };
 
-export default function GenerateScoreForm({ members, scoringCriteria, onScoresCalculated }: GenerateScoreFormProps) {
+export default function GenerateScoreForm({ members, scoringCriteria, onScoresCalculated, existingReport }: GenerateScoreFormProps) {
   const formSchema = generateFormSchema(scoringCriteria);
   type FormSchemaType = z.infer<typeof formSchema>;
 
-  const defaultValues: FormSchemaType = {
-    date: new Date(),
-    members: members.reduce((acc, member) => {
-      acc[member.id] = {
-        ...scoringCriteria.reduce((critAcc, criterion) => {
-          critAcc[criterion.id] = criterion.id === 'present'; // Default 'presente' to true
-          return critAcc;
-        }, {} as Record<string, boolean>),
-        observation: "",
+  const getDefaultValues = (report: ScoreInfo | null | undefined): FormSchemaType => {
+    if (report) {
+      return {
+        date: report.date,
+        members: members.reduce((acc, member) => {
+          const memberScore = report.memberScores[member.id];
+          acc[member.id] = {
+            ...scoringCriteria.reduce((critAcc, criterion) => {
+              critAcc[criterion.id] = memberScore ? !!memberScore[criterion.id] : false;
+              return critAcc;
+            }, {} as Record<string, boolean>),
+            observation: memberScore?.observation || "",
+          };
+          return acc;
+        }, {} as FormSchemaType['members']),
       };
-      return acc;
-    }, {} as FormSchemaType['members']),
+    }
+
+    return {
+      date: new Date(),
+      members: members.reduce((acc, member) => {
+        acc[member.id] = {
+          ...scoringCriteria.reduce((critAcc, criterion) => {
+            critAcc[criterion.id] = criterion.id === 'present'; // Default 'presente' to true
+            return critAcc;
+          }, {} as Record<string, boolean>),
+          observation: "",
+        };
+        return acc;
+      }, {} as FormSchemaType['members']),
+    };
   };
   
   const form = useForm<FormSchemaType>({
     resolver: zodResolver(formSchema),
-    defaultValues,
+    defaultValues: getDefaultValues(existingReport),
   });
+
+  useEffect(() => {
+    form.reset(getDefaultValues(existingReport));
+  }, [existingReport, form]);
 
   function onSubmit(values: FormSchemaType) {
     const memberScores: ScoreInfo['memberScores'] = {};
@@ -87,9 +113,9 @@ export default function GenerateScoreForm({ members, scoringCriteria, onScoresCa
             observation: memberData.observation
         };
     }
-
-    onScoresCalculated({ id: new Date().getTime().toString(), date: values.date, memberScores });
-    form.reset(defaultValues);
+    
+    const reportId = existingReport ? existingReport.id : new Date().getTime().toString();
+    onScoresCalculated({ id: reportId, date: values.date, memberScores });
   }
 
   return (

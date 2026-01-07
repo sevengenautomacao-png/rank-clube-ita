@@ -52,6 +52,7 @@ export default function UnitPage() {
   const [editingMember, setEditingMember] = useState<Member | null>(null);
   const [isSettingsSheetOpen, setSettingsSheetOpen] = useState(false);
   const [isGenerateScoreDialogOpen, setGenerateScoreDialogOpen] = useState(false);
+  const [editingReport, setEditingReport] = useState<ScoreInfo | null>(null);
   const [background, setBackground] = useState({ type: 'color', value: '#111827' }); // dark gray default
   const [localUnitName, setLocalUnitName] = useState("");
   const [localUnitIcon, setLocalUnitIcon] = useState("");
@@ -60,7 +61,7 @@ export default function UnitPage() {
     if (unit) {
       setMembers(unit.members?.map(m => ({ ...m, score: m.score ?? 0 })) || []);
       setScoringCriteria(unit.scoringCriteria || []);
-      setScoreHistory(unit.scoreHistory || []);
+      setScoreHistory(unit.scoreHistory?.map(sh => ({...sh, date: (sh.date as any).toDate()})) || []);
       setLocalUnitName(unit.name);
       setLocalUnitIcon(unit.icon);
       if (unit.cardImageUrl) {
@@ -139,17 +140,65 @@ export default function UnitPage() {
     })
   };
 
-  const handleScoresCalculated = (scoreInfo: ScoreInfo) => {
-    const updatedMembers = members.map(member => {
-      const memberScoreUpdate = scoreInfo.memberScores[member.id];
-      if (memberScoreUpdate) {
-        const newScore = (member.score || 0) + memberScoreUpdate.points;
-        return { ...member, score: newScore };
-      }
-      return member;
-    });
+  const handleOpenScoreDialog = (report: ScoreInfo | null) => {
+    setEditingReport(report);
+    setGenerateScoreDialogOpen(true);
+  };
 
-    const updatedScoreHistory = [scoreInfo, ...scoreHistory];
+  const handleScoresCalculated = (scoreInfo: ScoreInfo) => {
+    let updatedMembers = [...members];
+    let updatedScoreHistory = [...scoreHistory];
+
+    if (editingReport) {
+      // Logic for UPDATING a report
+      const originalReport = scoreHistory.find(r => r.id === editingReport.id);
+
+      // 1. Revert the old scores from the original report
+      if (originalReport) {
+        updatedMembers = members.map(member => {
+          const originalMemberScore = originalReport.memberScores[member.id];
+          if (originalMemberScore) {
+            return { ...member, score: (member.score || 0) - originalMemberScore.points };
+          }
+          return member;
+        });
+      }
+
+      // 2. Apply the new scores from the updated report (scoreInfo)
+      updatedMembers = updatedMembers.map(member => {
+        const newMemberScore = scoreInfo.memberScores[member.id];
+        if (newMemberScore) {
+          return { ...member, score: (member.score || 0) + newMemberScore.points };
+        }
+        return member;
+      });
+
+      // 3. Replace the old report with the new one in history
+      updatedScoreHistory = scoreHistory.map(r => r.id === scoreInfo.id ? scoreInfo : r);
+      
+      toast({
+        title: "Relatório atualizado!",
+        description: `O relatório de ${scoreInfo.date.toLocaleDateString()} foi atualizado.`,
+      });
+
+    } else {
+      // Logic for ADDING a new report
+      updatedMembers = members.map(member => {
+        const memberScoreUpdate = scoreInfo.memberScores[member.id];
+        if (memberScoreUpdate) {
+          const newScore = (member.score || 0) + memberScoreUpdate.points;
+          return { ...member, score: newScore };
+        }
+        return member;
+      });
+
+      updatedScoreHistory = [scoreInfo, ...scoreHistory];
+
+      toast({
+        title: "Pontuações atualizadas!",
+        description: `As pontuações para ${scoreInfo.date.toLocaleDateString()} foram adicionadas.`,
+      });
+    }
     
     setMembers(updatedMembers);
     setScoreHistory(updatedScoreHistory);
@@ -159,10 +208,7 @@ export default function UnitPage() {
     }
 
     setGenerateScoreDialogOpen(false);
-    toast({
-      title: "Pontuações atualizadas!",
-      description: `As pontuações para ${scoreInfo.date.toLocaleDateString()} foram adicionadas.`,
-    });
+    setEditingReport(null);
   }
 
   const handleUpdateCriterion = (index: number, field: 'label' | 'points', value: string | number) => {
@@ -415,18 +461,21 @@ export default function UnitPage() {
               ))}
             </div>
             <div className="mt-8 flex justify-center">
-                <Dialog open={isGenerateScoreDialogOpen} onOpenChange={setGenerateScoreDialogOpen}>
+                <Dialog open={isGenerateScoreDialogOpen} onOpenChange={(isOpen) => {
+                  setGenerateScoreDialogOpen(isOpen);
+                  if (!isOpen) setEditingReport(null);
+                }}>
                     <DialogTrigger asChild>
-                        <Button variant="secondary" size="lg" disabled={!unit}>
+                        <Button variant="secondary" size="lg" disabled={!unit} onClick={() => handleOpenScoreDialog(null)}>
                             <FilePlus2 className="mr-2 h-5 w-5" />
                             Lançar Pontuação
                         </Button>
                     </DialogTrigger>
                     <DialogContent className="sm:max-w-2xl">
                         <DialogHeader>
-                            <DialogTitle>Lançar nova pontuação</DialogTitle>
+                            <DialogTitle>{editingReport ? 'Editar Lançamento' : 'Lançar nova pontuação'}</DialogTitle>
                         </DialogHeader>
-                        {unit && <GenerateScoreForm members={members} scoringCriteria={unit.scoringCriteria} onScoresCalculated={handleScoresCalculated} />}
+                        {unit && <GenerateScoreForm members={members} scoringCriteria={unit.scoringCriteria} onScoresCalculated={handleScoresCalculated} existingReport={editingReport} />}
                     </DialogContent>
                 </Dialog>
             </div>
@@ -441,6 +490,7 @@ export default function UnitPage() {
                         members={members} 
                         scoringCriteria={scoringCriteria}
                         onDeleteReport={handleDeleteReport}
+                        onEditReport={() => handleOpenScoreDialog(report)}
                       />
                   ))}
                 </div>

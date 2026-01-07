@@ -29,9 +29,10 @@ interface ScoreReportCardProps {
     members: Member[];
     scoringCriteria: ScoringCriterion[];
     onDeleteReport: (reportId: string) => void;
+    onEditReport: (report: ScoreInfo) => void;
 }
 
-export default function ScoreReportCard({ report, members, scoringCriteria, onDeleteReport }: ScoreReportCardProps) {
+export default function ScoreReportCard({ report, members, scoringCriteria, onDeleteReport, onEditReport }: ScoreReportCardProps) {
     const [isOpen, setIsOpen] = useState(false);
 
     const getMemberName = (memberId: string) => {
@@ -43,9 +44,11 @@ export default function ScoreReportCard({ report, members, scoringCriteria, onDe
         if (report.date instanceof Date) {
             return report.date;
         }
+        // Firestore Timestamps need to be converted
         if (typeof (report.date as any).toDate === 'function') {
             return (report.date as any).toDate();
         }
+        // Fallback for string dates (less ideal)
         return new Date(report.date); 
     }
 
@@ -63,7 +66,7 @@ export default function ScoreReportCard({ report, members, scoringCriteria, onDe
                         </CardTitle>
                     </div>
                     <div className="flex items-center gap-2">
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); alert('Editar relatório em breve!'); }}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); onEditReport(report); }}>
                             <Edit className="h-4 w-4" />
                             <span className="sr-only">Editar Relatório</span>
                         </Button>
