@@ -12,7 +12,6 @@ import { collection, query } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { Unit, Member, Rank } from '@/lib/types';
 import { getRankForScore, getRanksForScore } from '@/lib/ranks';
-import { ThemeSwitcher } from '@/components/theme-switcher';
 
 
 const iconMap: { [key: string]: LucideIcon } = {
@@ -58,10 +57,9 @@ export default function Home() {
     <div className="flex flex-col min-h-screen">
       <main className="flex-grow flex flex-col items-center p-4 sm:p-8 bg-background">
         <header className="w-full max-w-4xl flex justify-between items-center text-center mb-8 sm:mb-12">
-           <h1 className="text-2xl sm:text-4xl font-bold font-headline text-yellow-400">
+           <h1 className="text-2xl sm:text-4xl font-bold text-yellow-400">
             Rank Clube Ita
           </h1>
-          <ThemeSwitcher />
         </header>
         <div className="w-full max-w-4xl text-center mb-8">
           <p className="text-sm text-muted-foreground mt-2">
@@ -82,7 +80,7 @@ export default function Home() {
             return (
               <Link href={`/unit/${unit.id}`} key={unit.id} className="transform transition-transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-ring rounded-lg">
                 <Card 
-                    className="aspect-square flex flex-col justify-end p-4 hover:border-primary border-2 border-transparent transition-colors duration-300 relative overflow-hidden theme-retro:rounded-none"
+                    className="aspect-square flex flex-col justify-end p-4 hover:border-primary border-2 border-transparent transition-colors duration-300 relative overflow-hidden"
                     style={{ backgroundColor: unit.cardColor && !unit.cardImageUrl ? unit.cardColor : undefined }}
                 >
                   {unit.cardImageUrl ? (
@@ -122,7 +120,7 @@ export default function Home() {
         
         {top5Members.length > 0 && (
           <section className="w-full max-w-4xl mt-12">
-            <Card className="border-2 theme-retro:rounded-none">
+            <Card className="border-2">
               <CardHeader>
                 <div className="flex items-center gap-2">
                     <Trophy className="h-6 w-6 text-yellow-400" />
