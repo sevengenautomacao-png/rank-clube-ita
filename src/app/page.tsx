@@ -56,7 +56,7 @@ export default function Home() {
     <div className="flex flex-col min-h-screen">
       <main className="flex-grow flex flex-col items-center p-4 sm:p-8 bg-background">
         <header className="text-center mb-8 sm:mb-12">
-          <h1 className="text-2xl sm:text-4xl font-bold font-headline text-primary">
+          <h1 className="text-2xl sm:text-4xl font-bold font-headline text-yellow-400">
             Rank Clube Ita
           </h1>
           <p className="text-sm text-muted-foreground mt-2">
