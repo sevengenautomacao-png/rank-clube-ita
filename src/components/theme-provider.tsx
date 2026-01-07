@@ -11,7 +11,7 @@ export type ThemeProviderState = {
 }
 
 const initialState: ThemeProviderState = {
-  theme: "retro",
+  theme: "modern",
   setTheme: () => null,
 }
 
@@ -19,7 +19,7 @@ const ThemeProviderContext = React.createContext<ThemeProviderState>(initialStat
 
 export function ThemeProvider({
   children,
-  defaultTheme = "retro",
+  defaultTheme = "modern",
   storageKey = "vite-ui-theme",
   ...props
 }: {
@@ -27,32 +27,32 @@ export function ThemeProvider({
   defaultTheme?: Theme
   storageKey?: string
 }) {
-  const [theme, setTheme] = React.useState<Theme>(defaultTheme);
-
-  React.useEffect(() => {
-    const storedTheme = localStorage.getItem(storageKey) as Theme | null;
-    if (storedTheme) {
-      setTheme(storedTheme);
+  const [theme, setTheme] = React.useState<Theme>(() => {
+    if (typeof window !== 'undefined') {
+      return (localStorage.getItem(storageKey) as Theme) || defaultTheme
     }
-  }, [storageKey]);
+    return defaultTheme
+  });
 
   React.useEffect(() => {
-    const root = window.document.documentElement
-
-    root.classList.remove("theme-retro", "theme-modern")
-    root.classList.add(`theme-${theme}`)
-
+    const root = window.document.documentElement;
+    root.classList.remove("theme-retro", "theme-modern");
+    root.classList.add(`theme-${theme}`);
+    
     if (theme === 'retro') {
       root.style.fontFamily = '"Press Start 2P", cursive';
     } else {
       root.style.fontFamily = '"Inter", sans-serif';
     }
-  }, [theme])
+  }, [theme]);
+
 
   const value = {
     theme,
     setTheme: (theme: Theme) => {
-      localStorage.setItem(storageKey, theme)
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(storageKey, theme)
+      }
       setTheme(theme)
     },
   }
