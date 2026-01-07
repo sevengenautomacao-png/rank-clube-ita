@@ -1,4 +1,9 @@
+
 import type { LucideIcon } from 'lucide-react';
+
+export type AppSettings = {
+  appIconUrl?: string;
+}
 
 export type RankData = {
   score: number;

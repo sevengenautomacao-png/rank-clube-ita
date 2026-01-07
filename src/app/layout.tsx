@@ -9,6 +9,7 @@ import { ThemeProvider } from '@/components/theme-provider';
 export const metadata: Metadata = {
   title: 'Rank Clube Ita',
   description: 'Manage your Pathfinder units and member rankings.',
+  manifest: '/manifest',
 };
 
 export default function RootLayout({
@@ -19,7 +20,6 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#facc15" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />

@@ -5,7 +5,7 @@ import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Plus, Trash2, Edit, LogOut, Eye, EyeOff, Star, Upload } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Edit, LogOut, Eye, EyeOff, Star, Upload, Image as ImageIcon } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import type { Unit, RankData } from '@/lib/types';
+import type { Unit, RankData, AppSettings } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   AlertDialog,
@@ -32,7 +32,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking, setDocumentNonBlocking, useAuth } from '@/firebase';
+import { useCollection, useDoc, useFirestore, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking, setDocumentNonBlocking, useAuth } from '@/firebase';
 import { collection, query, doc } from 'firebase/firestore';
 import { signInWithEmailAndPassword, signOut, setPersistence, browserLocalPersistence, browserSessionPersistence } from 'firebase/auth';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -61,6 +61,11 @@ const rankFormSchema = z.object({
   iconUrl: z.string().url({ message: "Por favor, insira uma URL válida." }).optional().or(z.literal('')),
 });
 
+const appSettingsFormSchema = z.object({
+    appIconUrl: z.string().url({ message: "Por favor, insira uma URL de ícone válida." }).optional().or(z.literal('')),
+});
+
+
 export default function AdminPage() {
   const router = useRouter();
   const { toast } = useToast();
@@ -78,7 +83,25 @@ export default function AdminPage() {
     return query(collection(firestore, 'units'));
   }, [firestore]);
 
+  const appSettingsRef = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return doc(firestore, 'settings', 'app');
+  }, [firestore]);
+  
+  const { data: appSettings } = useDoc<AppSettings>(appSettingsRef);
+
   const { data: units, isLoading } = useCollection<Unit>(unitsQuery);
+
+  const appSettingsForm = useForm<z.infer<typeof appSettingsFormSchema>>({
+      resolver: zodResolver(appSettingsFormSchema),
+      defaultValues: { appIconUrl: '' }
+  });
+
+  useEffect(() => {
+    if (appSettings) {
+        appSettingsForm.reset({ appIconUrl: appSettings.appIconUrl || '' });
+    }
+  }, [appSettings, appSettingsForm]);
 
   useEffect(() => {
     if (units && units.length > 0) {
@@ -211,6 +234,15 @@ export default function AdminPage() {
     });
   }
 
+  const handleSaveAppSettings = (values: z.infer<typeof appSettingsFormSchema>) => {
+    if (!appSettingsRef) return;
+    setDocumentNonBlocking(appSettingsRef, values, { merge: true });
+    toast({
+        title: "Configurações do App Salvas!",
+        description: "As configurações gerais do aplicativo foram atualizadas.",
+    });
+  };
+
   if (!isAuthenticated) {
     return (
         <main className="flex flex-col items-center min-h-screen p-4 sm:p-8 bg-background">
@@ -334,6 +366,38 @@ export default function AdminPage() {
         </div>
 
         <div className="space-y-10">
+        <Card>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                <ImageIcon />
+                Ícone do Aplicativo
+                </CardTitle>
+            </CardHeader>
+            <CardContent>
+                <Form {...appSettingsForm}>
+                <form onSubmit={appSettingsForm.handleSubmit(handleSaveAppSettings)} className="space-y-6 text-left">
+                    <FormField
+                    control={appSettingsForm.control}
+                    name="appIconUrl"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>URL do Ícone do App</FormLabel>
+                        <FormControl>
+                            <Input placeholder="https://exemplo.com/icone.png" {...field} />
+                        </FormControl>
+                        <p className="text-xs text-muted-foreground mt-1">Este ícone será usado quando o app for instalado (PWA). Use uma imagem PNG 192x192 ou 512x512.</p>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                    <Button type="submit" className="w-full" disabled={!firestore}>
+                        Salvar Ícone do App
+                    </Button>
+                </form>
+                </Form>
+            </CardContent>
+        </Card>
+
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
