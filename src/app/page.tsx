@@ -4,7 +4,7 @@
 import { useMemo } from 'react';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Users, Shield, Mountain, Gem, BookOpen, Star, Trophy, type LucideIcon } from 'lucide-react';
+import { Users, Shield, Mountain, Gem, BookOpen, Star, Trophy, type LucideIcon, Palette } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import Image from 'next/image';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
@@ -71,10 +71,10 @@ export default function Home() {
         <div className="w-full max-w-4xl grid grid-cols-1 sm:grid-cols-2 gap-6">
           {isLoading && (
             <>
-              <Skeleton className="aspect-square rounded-lg" />
-              <Skeleton className="aspect-square rounded-lg" />
-              <Skeleton className="aspect-square rounded-lg" />
-              <Skeleton className="aspect-square rounded-lg" />
+              <Skeleton className="h-64 sm:aspect-square rounded-lg" />
+              <Skeleton className="h-64 sm:aspect-square rounded-lg" />
+              <Skeleton className="h-64 sm:aspect-square rounded-lg" />
+              <Skeleton className="h-64 sm:aspect-square rounded-lg" />
             </>
           )}
           {units?.map((unit) => {
@@ -82,7 +82,7 @@ export default function Home() {
             return (
               <Link href={`/unit/${unit.id}`} key={unit.id} className="transform transition-transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-ring rounded-lg">
                 <Card 
-                    className="aspect-square flex flex-col justify-end p-4 hover:border-primary border-2 border-transparent transition-colors duration-300 relative overflow-hidden"
+                    className="h-64 sm:aspect-square flex flex-col justify-end p-4 hover:border-primary border-2 border-transparent transition-colors duration-300 relative overflow-hidden"
                     style={{ backgroundColor: unit.cardColor && !unit.cardImageUrl ? unit.cardColor : undefined }}
                 >
                   {unit.cardImageUrl ? (
