@@ -4,7 +4,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Plus, Trash2, User, Users, Settings } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, User, Users, Settings, Shield, Mountain, Gem, BookOpen, type LucideIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
@@ -16,6 +16,15 @@ import { useToast } from "@/hooks/use-toast"
 import { Skeleton } from '@/components/ui/skeleton';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
+const iconMap: { [key: string]: LucideIcon } = {
+  Shield,
+  Mountain,
+  Gem,
+  BookOpen,
+};
+const iconOptions = Object.keys(iconMap);
 
 export default function UnitPage() {
   const router = useRouter();
@@ -33,12 +42,12 @@ export default function UnitPage() {
   const initialUnit = useMemo(() => initialUnits.find((u) => u.id === unitId), [unitId]);
 
   useEffect(() => {
-    // This is a temporary solution to update the unit name on the home page.
+    // This is a temporary solution to update the unit data on the home page.
     // A proper solution would involve a global state management or passing callbacks.
-    if (unit && unit.name !== initialUnits.find(u => u.id === unitId)?.name) {
+    if (unit) {
       const unitIndex = initialUnits.findIndex(u => u.id === unitId);
       if (unitIndex !== -1) {
-        initialUnits[unitIndex].name = unit.name;
+        initialUnits[unitIndex] = unit;
       }
     }
   }, [unit, unitId]);
@@ -82,6 +91,10 @@ export default function UnitPage() {
       variant: "destructive"
     })
   };
+  
+  const handleIconChange = (iconName: string) => {
+    setUnit(prevUnit => prevUnit ? {...prevUnit, icon: iconName} : null)
+  }
 
   const pageStyle: React.CSSProperties =
     background.type === 'image'
@@ -155,6 +168,27 @@ export default function UnitPage() {
                             value={unit?.name || ''}
                             onChange={(e) => setUnit(prevUnit => prevUnit ? {...prevUnit, name: e.target.value} : null)}
                         />
+                    </div>
+                     <div>
+                        <Label htmlFor="unit-icon">Ícone da Unidade</Label>
+                        <Select value={unit?.icon} onValueChange={handleIconChange}>
+                            <SelectTrigger id="unit-icon">
+                                <SelectValue placeholder="Selecione um ícone" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {iconOptions.map(iconName => {
+                                    const Icon = iconMap[iconName];
+                                    return (
+                                        <SelectItem key={iconName} value={iconName}>
+                                            <div className="flex items-center gap-2">
+                                                <Icon className="h-5 w-5" />
+                                                <span>{iconName}</span>
+                                            </div>
+                                        </SelectItem>
+                                    )
+                                })}
+                            </SelectContent>
+                        </Select>
                     </div>
                     <div>
                         <Label htmlFor="bg-color">Cor de Fundo</Label>

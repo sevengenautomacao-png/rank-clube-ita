@@ -12,23 +12,27 @@ export const initialUnits: Unit[] = [
     name: 'Monte Hope',
     members: sampleMembers,
     cardImageUrl: 'https://picsum.photos/seed/1/600/400',
+    icon: 'Shield',
   },
   {
     id: 'monte-sinai',
     name: 'Monte Sinai',
     members: [],
     cardColor: 'bg-blue-900',
+    icon: 'Mountain',
   },
   {
     id: 'rubi',
     name: 'Rubi',
     members: [],
     cardImageUrl: 'https://picsum.photos/seed/2/600/400',
+    icon: 'Gem',
   },
   {
     id: 'sinai',
     name: 'Sinai',
     members: [],
     cardColor: 'bg-purple-900',
+    icon: 'BookOpen',
   },
 ];

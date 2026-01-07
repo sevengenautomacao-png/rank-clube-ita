@@ -1,9 +1,17 @@
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { initialUnits } from '@/lib/data';
-import { Users, Shield } from 'lucide-react';
+import { Users, Shield, Mountain, Gem, BookOpen, type LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
+
+const iconMap: { [key: string]: LucideIcon } = {
+  Shield,
+  Mountain,
+  Gem,
+  BookOpen,
+};
+
 
 export default function Home() {
   return (
@@ -17,38 +25,41 @@ export default function Home() {
         </p>
       </header>
       <div className="w-full max-w-4xl grid grid-cols-1 sm:grid-cols-2 gap-6">
-        {initialUnits.map((unit) => (
-          <Link href={`/unit/${unit.id}`} key={unit.id} className="transform transition-transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-ring rounded-lg">
-            <Card className={cn(
-              "aspect-square flex flex-col justify-end p-4 hover:border-primary border-2 border-transparent transition-colors duration-300 relative overflow-hidden",
-              unit.cardColor
-            )}>
-              {unit.cardImageUrl && (
-                <Image
-                  src={unit.cardImageUrl}
-                  alt={unit.name}
-                  fill
-                  className="object-cover z-0"
-                  data-ai-hint="nature landscape"
-                />
-              )}
-              <div className="relative z-10 bg-black/50 p-4 rounded-lg mt-auto">
-                <CardHeader className="flex flex-row items-center justify-between text-left pb-2 p-0">
-                  <div className='flex items-center gap-2'>
-                    <Shield className="h-8 w-8 text-primary" />
-                    <CardTitle className="text-2xl font-bold text-white">{unit.name}</CardTitle>
-                  </div>
-                </CardHeader>
-                <CardContent className="p-0">
-                  <div className="flex items-center gap-2 text-lg text-gray-200">
-                    <Users className="h-5 w-5" />
-                    <span>{unit.members.length} membro(s)</span>
-                  </div>
-                </CardContent>
-              </div>
-            </Card>
-          </Link>
-        ))}
+        {initialUnits.map((unit) => {
+          const Icon = iconMap[unit.icon] || Shield;
+          return (
+            <Link href={`/unit/${unit.id}`} key={unit.id} className="transform transition-transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-ring rounded-lg">
+              <Card className={cn(
+                "aspect-square flex flex-col justify-end p-4 hover:border-primary border-2 border-transparent transition-colors duration-300 relative overflow-hidden",
+                unit.cardColor
+              )}>
+                {unit.cardImageUrl && (
+                  <Image
+                    src={unit.cardImageUrl}
+                    alt={unit.name}
+                    fill
+                    className="object-cover z-0"
+                    data-ai-hint="nature landscape"
+                  />
+                )}
+                <div className="relative z-10 bg-black/50 p-4 rounded-lg mt-auto">
+                  <CardHeader className="flex flex-row items-center justify-between text-left pb-2 p-0">
+                    <div className='flex items-center gap-2'>
+                      <Icon className="h-8 w-8 text-primary" />
+                      <CardTitle className="text-2xl font-bold text-white">{unit.name}</CardTitle>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="p-0">
+                    <div className="flex items-center gap-2 text-lg text-gray-200">
+                      <Users className="h-5 w-5" />
+                      <span>{unit.members.length} membro(s)</span>
+                    </div>
+                  </CardContent>
+                </div>
+              </Card>
+            </Link>
+          );
+        })}
       </div>
     </main>
   );

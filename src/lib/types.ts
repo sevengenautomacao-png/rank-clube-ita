@@ -12,4 +12,5 @@ export type Unit = {
   members: Member[];
   cardImageUrl?: string;
   cardColor?: string;
+  icon: string;
 };
