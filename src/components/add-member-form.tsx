@@ -13,10 +13,11 @@ const formSchema = z.object({
   age: z.coerce.number({invalid_type_error: "Idade deve ser um número."}).int().positive({ message: "A idade deve ser um número positivo." }),
   role: z.string().min(2, { message: "A função deve ter pelo menos 2 caracteres." }),
   className: z.string().min(2, { message: "A classe deve ter pelo menos 2 caracteres." }),
+  avatarUrl: z.string().url({ message: "Por favor, insira uma URL válida." }).optional().or(z.literal('')),
 });
 
 type AddMemberFormProps = {
-  onMemberAdd: (member: Omit<Member, 'id' | 'score'>) => void;
+  onMemberAdd: (member: Omit<Member, 'id' | 'score' | 'ranking'>) => void;
 };
 
 export default function AddMemberForm({ onMemberAdd }: AddMemberFormProps) {
@@ -27,6 +28,7 @@ export default function AddMemberForm({ onMemberAdd }: AddMemberFormProps) {
       age: '' as any,
       role: "",
       className: "",
+      avatarUrl: "",
     },
   });
 
@@ -85,6 +87,19 @@ export default function AddMemberForm({ onMemberAdd }: AddMemberFormProps) {
               <FormLabel>Classe</FormLabel>
               <FormControl>
                 <Input placeholder="Amigo, Guia..." {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="avatarUrl"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>URL da Foto de Perfil (Opcional)</FormLabel>
+              <FormControl>
+                <Input placeholder="https://exemplo.com/foto.png" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>

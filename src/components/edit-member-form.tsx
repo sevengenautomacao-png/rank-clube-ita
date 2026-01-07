@@ -15,6 +15,7 @@ const formSchema = z.object({
   age: z.coerce.number({invalid_type_error: "Idade deve ser um número."}).int().positive({ message: "A idade deve ser um número positivo." }),
   role: z.string().min(2, { message: "A função deve ter pelo menos 2 caracteres." }),
   className: z.string().min(2, { message: "A classe deve ter pelo menos 2 caracteres." }),
+  avatarUrl: z.string().url({ message: "Por favor, insira uma URL válida." }).optional().or(z.literal('')),
 });
 
 type EditMemberFormProps = {
@@ -31,6 +32,7 @@ export default function EditMemberForm({ member, onMemberUpdate, onMemberDelete 
       age: member.age,
       role: member.role,
       className: member.className,
+      avatarUrl: member.avatarUrl || '',
     },
   });
 
@@ -88,6 +90,19 @@ export default function EditMemberForm({ member, onMemberUpdate, onMemberDelete 
               <FormLabel>Classe</FormLabel>
               <FormControl>
                 <Input placeholder="Amigo, Guia..." {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="avatarUrl"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>URL da Foto de Perfil (Opcional)</FormLabel>
+              <FormControl>
+                <Input placeholder="https://exemplo.com/foto.png" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>

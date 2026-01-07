@@ -5,7 +5,7 @@ import { useMemo } from 'react';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Users, Shield, Mountain, Gem, BookOpen, Star, Trophy, type LucideIcon } from 'lucide-react';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import Image from 'next/image';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, query } from 'firebase/firestore';
@@ -16,7 +16,7 @@ import { ThemeSwitcher } from '@/components/theme-switcher';
 import { useTheme } from '@/components/theme-provider';
 
 
-const iconMap: { [key: string]: LucideIcon } = {
+const iconMap: { [key:string]: LucideIcon } = {
   Shield,
   Mountain,
   Gem,
@@ -139,7 +139,11 @@ export default function Home() {
                         <div className="flex items-center gap-4">
                             <span className="text-lg font-bold w-6 text-center">{index + 1}</span>
                             <Avatar>
-                                <AvatarFallback>{member.avatarFallback}</AvatarFallback>
+                                {member.avatarUrl ? (
+                                    <AvatarImage src={member.avatarUrl} alt={member.name} />
+                                ) : (
+                                    <AvatarFallback>{member.avatarFallback}</AvatarFallback>
+                                )}
                             </Avatar>
                             <div>
                                 <p className="font-semibold">{member.name}</p>

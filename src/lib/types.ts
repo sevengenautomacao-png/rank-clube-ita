@@ -24,6 +24,7 @@ export type Member = {
   className: string; // 'classe'
   score: number;
   ranking: number;
+  avatarUrl?: string;
   patent?: Rank;
   allPatents?: Rank[];
   unitName?: string;

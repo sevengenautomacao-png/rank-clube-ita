@@ -24,6 +24,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useDoc, useFirestore, useMemoFirebase, setDocumentNonBlocking } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import { getRankForScore } from '@/lib/ranks';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 
 const iconMap: { [key: string]: LucideIcon } = {
@@ -598,10 +599,16 @@ export default function UnitPage() {
                     <Card key={member.id} className="relative group flex flex-col bg-card/80 backdrop-blur-sm border">
                     <CardHeader>
                         <div className="flex items-center gap-4">
-                        <div className="bg-primary/20 p-3 rounded-full">
-                            <User className="h-6 w-6 text-primary" />
-                        </div>
-                        <CardTitle className="text-xl">{member.name}</CardTitle>
+                            <Avatar>
+                                {member.avatarUrl ? (
+                                    <AvatarImage src={member.avatarUrl} alt={member.name} />
+                                ) : (
+                                    <AvatarFallback>
+                                        {member.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
+                                    </AvatarFallback>
+                                )}
+                            </Avatar>
+                            <CardTitle className="text-xl">{member.name}</CardTitle>
                         </div>
                     </CardHeader>
                     <CardContent className="space-y-2 text-sm text-muted-foreground flex-grow">
