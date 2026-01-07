@@ -42,11 +42,10 @@ export default function ScoreReportCard({ report, members, scoringCriteria, onDe
         if (report.date instanceof Date) {
             return report.date;
         }
-        // Firestore timestamps have toDate() method
         if (report.date && typeof (report.date as any).toDate === 'function') {
             return (report.date as any).toDate();
         }
-        return new Date(report.date); // Fallback for string dates
+        return new Date(report.date); 
     }
 
     const displayDate = getReportDate();
@@ -98,13 +97,6 @@ export default function ScoreReportCard({ report, members, scoringCriteria, onDe
                 </CardHeader>
                 <CollapsibleContent>
                     <CardContent className="p-4 pt-0">
-                        {report.observation && (
-                          <div className="mb-4 p-3 bg-muted/50 rounded-lg">
-                            <p className="text-sm text-foreground">
-                              <strong>Observação:</strong> {report.observation}
-                            </p>
-                          </div>
-                        )}
                         <Table>
                             <TableHeader>
                                 <TableRow>
@@ -117,23 +109,32 @@ export default function ScoreReportCard({ report, members, scoringCriteria, onDe
                             </TableHeader>
                             <TableBody>
                                 {Object.entries(report.memberScores).map(([memberId, scores]) => (
-                                    <TableRow key={memberId}>
-                                        <TableCell className="font-medium">{getMemberName(memberId)}</TableCell>
-                                        {scoringCriteria.map(c => {
-                                            const wasScored = scores[c.id];
-                                            const points = wasScored ? c.points : 0;
-                                            return (
-                                                <TableCell key={c.id} className={cn(
-                                                    "text-center",
-                                                    points > 0 && "text-green-500",
-                                                    points < 0 && "text-red-500",
-                                                )}>
-                                                    {points !== 0 ? points : '-'}
+                                    <>
+                                        <TableRow key={memberId}>
+                                            <TableCell className="font-medium">{getMemberName(memberId)}</TableCell>
+                                            {scoringCriteria.map(c => {
+                                                const wasScored = scores[c.id];
+                                                const points = wasScored ? c.points : 0;
+                                                return (
+                                                    <TableCell key={c.id} className={cn(
+                                                        "text-center",
+                                                        points > 0 && "text-green-500",
+                                                        points < 0 && "text-red-500",
+                                                    )}>
+                                                        {points !== 0 ? points : '-'}
+                                                    </TableCell>
+                                                )
+                                            })}
+                                            <TableCell className="text-right font-bold">{scores.points}</TableCell>
+                                        </TableRow>
+                                        {scores.observation && (
+                                            <TableRow>
+                                                <TableCell colSpan={scoringCriteria.length + 2} className="py-2 px-4 text-sm text-muted-foreground bg-muted/20">
+                                                    <strong>Obs:</strong> {scores.observation}
                                                 </TableCell>
-                                            )
-                                        })}
-                                        <TableCell className="text-right font-bold">{scores.points}</TableCell>
-                                    </TableRow>
+                                            </TableRow>
+                                        )}
+                                    </>
                                 ))}
                             </TableBody>
                         </Table>

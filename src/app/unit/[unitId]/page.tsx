@@ -65,6 +65,8 @@ export default function UnitPage() {
       setLocalUnitIcon(unit.icon);
       if (unit.cardImageUrl) {
         setBackground({ type: 'image', value: unit.cardImageUrl });
+      } else if (unit.cardColor) {
+        setBackground({ type: 'color', value: unit.cardColor });
       } else {
         setBackground({ type: 'color', value: '#111827' });
       }
@@ -77,7 +79,8 @@ export default function UnitPage() {
     const updatedUnitData: Partial<Unit> = {
       name: localUnitName,
       icon: localUnitIcon,
-      cardImageUrl: background.type === 'image' ? background.value : '',
+      cardImageUrl: background.type === 'image' ? background.value : "",
+      cardColor: background.type === 'color' ? background.value : '',
       scoringCriteria,
     };
     

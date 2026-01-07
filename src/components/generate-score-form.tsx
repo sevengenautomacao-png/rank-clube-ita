@@ -20,18 +20,18 @@ import { cn } from "@/lib/utils";
 import type { Member, ScoreInfo, ScoringCriterion } from "@/lib/types";
 
 const generateFormSchema = (scoringCriteria: ScoringCriterion[]) => {
-  const membersSchema = z.record(z.object(
-    scoringCriteria.reduce((acc, criterion) => {
+  const membersSchema = z.record(z.object({
+    ...scoringCriteria.reduce((acc, criterion) => {
       acc[criterion.id] = z.boolean().default(false);
       return acc;
-    }, {} as Record<string, z.ZodBoolean>)
-  ));
+    }, {} as Record<string, z.ZodBoolean>),
+    observation: z.string().optional(),
+  }));
 
   return z.object({
     date: z.date({
       required_error: "A data do evento é obrigatória.",
     }),
-    observation: z.string().optional(),
     members: membersSchema,
   });
 };
@@ -48,12 +48,14 @@ export default function GenerateScoreForm({ members, scoringCriteria, onScoresCa
 
   const defaultValues: FormSchemaType = {
     date: new Date(),
-    observation: "",
     members: members.reduce((acc, member) => {
-      acc[member.id] = scoringCriteria.reduce((critAcc, criterion) => {
-        critAcc[criterion.id] = criterion.id === 'present'; // Default 'presente' to true
-        return critAcc;
-      }, {} as Record<string, boolean>);
+      acc[member.id] = {
+        ...scoringCriteria.reduce((critAcc, criterion) => {
+          critAcc[criterion.id] = criterion.id === 'present'; // Default 'presente' to true
+          return critAcc;
+        }, {} as Record<string, boolean>),
+        observation: "",
+      };
       return acc;
     }, {} as FormSchemaType['members']),
   };
@@ -69,7 +71,7 @@ export default function GenerateScoreForm({ members, scoringCriteria, onScoresCa
     for (const memberId in values.members) {
         const memberData = values.members[memberId];
         let totalPoints = 0;
-        const scoreDetails: Record<string, boolean> = {};
+        const scoreDetails: Record<string, boolean | number | string> = {};
 
         scoringCriteria.forEach(criterion => {
             const isChecked = memberData[criterion.id];
@@ -78,11 +80,15 @@ export default function GenerateScoreForm({ members, scoringCriteria, onScoresCa
                 totalPoints += criterion.points;
             }
         });
-
-        memberScores[memberId] = { ...scoreDetails, points: totalPoints };
+        
+        memberScores[memberId] = { 
+            ...scoreDetails, 
+            points: totalPoints,
+            observation: memberData.observation
+        };
     }
 
-    onScoresCalculated({ id: new Date().getTime().toString(), date: values.date, observation: values.observation, memberScores });
+    onScoresCalculated({ id: new Date().getTime().toString(), date: values.date, memberScores });
     form.reset(defaultValues);
   }
 
@@ -132,25 +138,6 @@ export default function GenerateScoreForm({ members, scoringCriteria, onScoresCa
           )}
         />
         
-        <FormField
-          control={form.control}
-          name="observation"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Observação</FormLabel>
-              <FormControl>
-                <Textarea
-                  placeholder="Adicione uma observação sobre a pontuação..."
-                  className="resize-none"
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-
         <Separator />
 
         <div className="space-y-4 max-h-[40vh] overflow-y-auto pr-4">
@@ -170,22 +157,42 @@ export default function GenerateScoreForm({ members, scoringCriteria, onScoresCa
                             <CardTitle className="text-lg">{member.name}</CardTitle>
                         </div>
                     </CardHeader>
-                    <CardContent className="p-4 pt-0 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                      {scoringCriteria.map(criterion => (
-                         <FormField
-                          key={criterion.id}
-                          control={form.control}
-                          name={`members.${member.id}.${criterion.id}`}
-                          render={({ field }) => (
-                            <FormItem className="flex items-center space-x-2 space-y-0">
+                    <CardContent className="p-4 pt-0 space-y-4">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                            {scoringCriteria.map(criterion => (
+                                <FormField
+                                    key={criterion.id}
+                                    control={form.control}
+                                    name={`members.${member.id}.${criterion.id}`}
+                                    render={({ field }) => (
+                                        <FormItem className="flex items-center space-x-2 space-y-0">
+                                            <FormControl>
+                                                <Checkbox checked={field.value as boolean} onCheckedChange={field.onChange} />
+                                            </FormControl>
+                                            <FormLabel className="font-normal">{criterion.label}</FormLabel>
+                                        </FormItem>
+                                    )}
+                                />
+                            ))}
+                        </div>
+                        <FormField
+                            control={form.control}
+                            name={`members.${member.id}.observation`}
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel className="sr-only">Observação</FormLabel>
                                 <FormControl>
-                                    <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                                    <Textarea
+                                        placeholder={`Adicione uma observação para ${member.name}...`}
+                                        className="resize-none"
+                                        {...field}
+                                        value={field.value || ''}
+                                    />
                                 </FormControl>
-                                <FormLabel className="font-normal">{criterion.label}</FormLabel>
-                            </FormItem>
-                          )}
+                                <FormMessage />
+                                </FormItem>
+                            )}
                         />
-                      ))}
                     </CardContent>
                  </Card>
               </FormItem>

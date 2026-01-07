@@ -26,13 +26,13 @@ export type Unit = {
 
 export type MemberScore = {
   points: number;
+  observation?: string;
   [criterionId: string]: boolean | number;
 }
 
 export type ScoreInfo = {
   id: string;
   date: Date;
-  observation?: string;
   memberScores: {
     [memberId: string]: MemberScore;
   }
