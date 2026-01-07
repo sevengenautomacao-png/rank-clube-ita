@@ -1,15 +1,16 @@
 
 'use client';
 
+import { useMemo } from 'react';
 import Link from 'next/link';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, Shield, Mountain, Gem, BookOpen, type LucideIcon } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Users, Shield, Mountain, Gem, BookOpen, Star, Trophy, type LucideIcon } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import Image from 'next/image';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, query } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
-import type { Unit } from '@/lib/types';
+import type { Unit, Member } from '@/lib/types';
 
 
 const iconMap: { [key: string]: LucideIcon } = {
@@ -29,6 +30,26 @@ export default function Home() {
   }, [firestore]);
 
   const { data: units, isLoading } = useCollection<Unit>(unitsQuery);
+
+  const top5Members = useMemo(() => {
+    if (!units) return [];
+    
+    const allMembers = units.flatMap(unit => 
+        (unit.members || []).map(member => ({ 
+            ...member, 
+            unitName: unit.name,
+            unitId: unit.id,
+            // Create a simple avatar from the member's name
+            avatarFallback: member.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()
+        }))
+    );
+
+    return allMembers
+        .filter(member => typeof member.score === 'number')
+        .sort((a, b) => (b.score || 0) - (a.score || 0))
+        .slice(0, 5);
+
+  }, [units]);
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -86,6 +107,45 @@ export default function Home() {
             );
           })}
         </div>
+        
+        {top5Members.length > 0 && (
+          <section className="w-full max-w-4xl mt-12">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                    <Trophy className="h-6 w-6 text-yellow-400" />
+                    <CardTitle>Top 5 Membros</CardTitle>
+                </div>
+                <CardDescription>Os membros com as maiores pontuações em todas as unidades.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-4">
+                  {top5Members.map((member, index) => (
+                    <li key={member.id} className="flex items-center justify-between p-3 bg-card rounded-lg border hover:bg-muted/50 transition-colors">
+                      <div className="flex items-center gap-4">
+                        <span className="text-lg font-bold w-6 text-center">{index + 1}</span>
+                        <Avatar>
+                            <AvatarFallback>{member.avatarFallback}</AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="font-semibold">{member.name}</p>
+                          <Link href={`/unit/${member.unitId}`} className="text-sm text-muted-foreground hover:underline">
+                            Unidade: {member.unitName}
+                          </Link>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 text-lg font-bold text-yellow-400">
+                        <Star className="h-5 w-5" />
+                        <span>{member.score}</span>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+          </section>
+        )}
+
       </main>
       <footer className="w-full py-4 px-8 mt-auto border-t border-border text-center text-muted-foreground">
         <Link href="/admin" className="hover:text-primary transition-colors">
