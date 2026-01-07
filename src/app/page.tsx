@@ -36,7 +36,7 @@ export default function Home() {
 
   const { data: units, isLoading } = useCollection<Unit>(unitsQuery);
 
-  const top5Members = useMemo(() => {
+  const topMembers = useMemo(() => {
     if (!units) return [];
     
     const allMembers: Member[] = units.flatMap(unit => {
@@ -50,10 +50,18 @@ export default function Home() {
         }))
     });
 
-    return allMembers
+    const sortedMembers = allMembers
         .filter(member => typeof member.score === 'number')
-        .sort((a, b) => (b.score || 0) - (a.score || 0))
-        .slice(0, 5);
+        .sort((a, b) => (b.score || 0) - (a.score || 0));
+
+    if (sortedMembers.length <= 5) {
+        return sortedMembers;
+    }
+
+    const fifthScore = sortedMembers[4].score;
+    const topMembersList = sortedMembers.filter(member => member.score >= fifthScore);
+
+    return topMembersList;
 
   }, [units]);
 
@@ -72,10 +80,10 @@ export default function Home() {
         <div className="w-full max-w-4xl grid grid-cols-1 sm:grid-cols-2 gap-6">
           {isLoading && (
             <>
-              <Skeleton className="h-64 sm:aspect-square rounded-lg" />
-              <Skeleton className="h-64 sm:aspect-square rounded-lg" />
-              <Skeleton className="h-64 sm:aspect-square rounded-lg" />
-              <Skeleton className="h-64 sm:aspect-square rounded-lg" />
+              <Skeleton className="h-64 sm:h-auto sm:aspect-square rounded-lg" />
+              <Skeleton className="h-64 sm:h-auto sm:aspect-square rounded-lg" />
+              <Skeleton className="h-64 sm:h-auto sm:aspect-square rounded-lg" />
+              <Skeleton className="h-64 sm:h-auto sm:aspect-square rounded-lg" />
             </>
           )}
           {units?.map((unit) => {
@@ -83,7 +91,7 @@ export default function Home() {
             return (
               <Link href={`/unit/${unit.id}`} key={unit.id} className="transform transition-transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-ring rounded-lg">
                 <Card 
-                    className="h-64 sm:aspect-square flex flex-col justify-end p-4 hover:border-primary border-2 border-transparent transition-colors duration-300 relative overflow-hidden"
+                    className="h-64 sm:h-auto sm:aspect-square flex flex-col justify-end p-4 hover:border-primary border-2 border-transparent transition-colors duration-300 relative overflow-hidden"
                     style={{ backgroundColor: unit.cardColor && !unit.cardImageUrl ? unit.cardColor : undefined }}
                 >
                   {unit.cardImageUrl ? (
@@ -121,19 +129,19 @@ export default function Home() {
           })}
         </div>
         
-        {top5Members.length > 0 && (
+        {topMembers.length > 0 && (
           <section className="w-full max-w-4xl mt-12">
             <Card className="border-2">
               <CardHeader>
                 <div className="flex items-center gap-2">
                     <Trophy className="h-6 w-6 text-yellow-400" />
-                    <CardTitle>Top 5 Membros</CardTitle>
+                    <CardTitle>Top Membros</CardTitle>
                 </div>
                 <CardDescription>Os membros com as maiores pontuações em todas as unidades.</CardDescription>
               </CardHeader>
               <CardContent>
                 <ul className="space-y-4">
-                  {top5Members.map((member, index) => {
+                  {topMembers.map((member, index) => {
                     const PatentIcon = member.patent?.Icon;
                     const isRetro = fontClassName === 'font-retro';
                     return (
