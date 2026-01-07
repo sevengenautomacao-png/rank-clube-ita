@@ -21,12 +21,14 @@ export const ranks: Rank[] = [
 ];
 
 function combineRanks(customRanks: RankData[]): Rank[] {
-    return ranks.map(defaultRank => {
-        const customRank = customRanks.find(cr => cr.name === defaultRank.name);
+    const sortedCustomRanks = [...customRanks].sort((a, b) => a.score - b.score);
+    
+    return sortedCustomRanks.map(customRank => {
+        const defaultRank = ranks.find(dr => dr.name === customRank.name);
         return {
             ...defaultRank,
             ...customRank,
-        };
+        } as Rank;
     });
 }
 
@@ -34,7 +36,7 @@ export function getRanks(customRanks?: RankData[]): Rank[] {
     if (customRanks && customRanks.length > 0) {
         return combineRanks(customRanks);
     }
-    return ranks;
+    return [...ranks].sort((a, b) => a.score - b.score);
 }
 
 
@@ -49,4 +51,17 @@ export function getRankForScore(score: number, customRanks?: RankData[]): Rank {
         }
     }
     return currentRank;
+}
+
+export function getRanksForScore(score: number, customRanks?: RankData[]): Rank[] {
+    const rankList = getRanks(customRanks);
+    const achievedRanks: Rank[] = [];
+    for (const rank of rankList) {
+        if (score >= rank.score) {
+            achievedRanks.push(rank);
+        } else {
+            break;
+        }
+    }
+    return achievedRanks;
 }

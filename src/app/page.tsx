@@ -11,7 +11,7 @@ import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, query } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { Unit, Member, Rank } from '@/lib/types';
-import { getRankForScore } from '@/lib/ranks';
+import { getRankForScore, getRanksForScore } from '@/lib/ranks';
 
 
 const iconMap: { [key: string]: LucideIcon } = {
@@ -35,13 +35,14 @@ export default function Home() {
   const top5Members = useMemo(() => {
     if (!units) return [];
     
-    const allMembers: (Member & { avatarFallback?: string, patent?: Rank })[] = units.flatMap(unit => {
+    const allMembers: Member[] = units.flatMap(unit => {
         return (unit.members || []).map(member => ({ 
             ...member, 
             unitName: unit.name,
             unitId: unit.id,
             avatarFallback: member.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase(),
-            patent: getRankForScore(member.score || 0, unit.ranks)
+            patent: getRankForScore(member.score || 0, unit.ranks),
+            allPatents: getRanksForScore(member.score || 0, unit.ranks),
         }))
     });
 
@@ -128,7 +129,6 @@ export default function Home() {
               <CardContent>
                 <ul className="space-y-4">
                   {top5Members.map((member, index) => {
-                    const PatentIcon = member.patent?.Icon;
                     return (
                         <li key={member.id} className="flex items-center justify-between p-3 bg-card rounded-lg border hover:bg-muted/50 transition-colors">
                         <div className="flex items-center gap-4">
@@ -137,20 +137,25 @@ export default function Home() {
                                 <AvatarFallback>{member.avatarFallback}</AvatarFallback>
                             </Avatar>
                             <div>
-                            <p className="font-semibold">{member.name}</p>
-                            {member.patent && (
-                                <p className="text-sm text-muted-foreground flex items-center gap-1">
-                                    {member.patent.iconUrl ? (
-                                      <img src={member.patent.iconUrl} alt={member.patent.name} className="h-4 w-4 object-contain" />
-                                    ) : PatentIcon ? (
-                                      <PatentIcon className="h-4 w-4" />
-                                    ) : null}
-                                    {member.patent.name}
-                                </p>
-                            )}
-                            <Link href={`/unit/${member.unitId}`} className="text-sm text-muted-foreground hover:underline">
-                                Unidade: {member.unitName}
-                            </Link>
+                                <p className="font-semibold">{member.name}</p>
+                                {member.patent && (
+                                    <p className="text-sm text-muted-foreground flex items-center gap-1">
+                                        {member.patent.name}
+                                    </p>
+                                )}
+                                <div className="flex items-center gap-1.5 mt-1">
+                                    {member.allPatents?.map(p => {
+                                        const PatentIcon = p.Icon;
+                                        return p.iconUrl ? (
+                                            <img key={p.name} src={p.iconUrl} alt={p.name} title={p.name} className="h-4 w-4 object-contain" />
+                                        ) : PatentIcon ? (
+                                            <PatentIcon key={p.name} title={p.name} className="h-4 w-4" />
+                                        ) : null
+                                    })}
+                                </div>
+                                <Link href={`/unit/${member.unitId}`} className="text-sm text-muted-foreground hover:underline mt-1 block">
+                                    Unidade: {member.unitName}
+                                </Link>
                             </div>
                         </div>
                         <div className="flex items-center gap-2 text-lg font-bold text-yellow-400">

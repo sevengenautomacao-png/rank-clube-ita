@@ -25,6 +25,7 @@ export type Member = {
   score: number;
   ranking: number;
   patent?: Rank;
+  allPatents?: Rank[];
   unitName?: string;
   unitId?: string;
   avatarFallback?: string;
