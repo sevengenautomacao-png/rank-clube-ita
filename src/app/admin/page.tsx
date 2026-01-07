@@ -5,7 +5,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Plus, Trash2, Edit, LogOut, Eye, EyeOff } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Edit, LogOut, Eye, EyeOff, Star, Upload } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import type { Unit } from '@/lib/types';
+import type { Unit, Rank } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   AlertDialog,
@@ -37,6 +37,7 @@ import { collection, query, doc } from 'firebase/firestore';
 import { signInWithEmailAndPassword, signOut, setPersistence, browserLocalPersistence, browserSessionPersistence } from 'firebase/auth';
 import { Skeleton } from '@/components/ui/skeleton';
 import { defaultScoringCriteria } from '@/lib/data';
+import { ranks as defaultRanks } from '@/lib/ranks';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -61,6 +62,8 @@ export default function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isAuthLoading, setIsAuthLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  
+  const [customRanks, setCustomRanks] = useState<Rank[]>(defaultRanks);
 
   const unitsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -130,7 +133,8 @@ export default function AdminPage() {
       password: values.password || "",
       members: [],
       icon: 'Shield', // Default icon
-      scoringCriteria: defaultScoringCriteria
+      scoringCriteria: defaultScoringCriteria,
+      ranks: defaultRanks
     };
 
     addDocumentNonBlocking(collection(firestore, 'units'), { ...newUnit, id: unitId });
@@ -166,6 +170,29 @@ export default function AdminPage() {
       description: `A unidade "${editingUnit.name}" foi atualizada.`,
     });
     setEditingUnit(null);
+  }
+
+   function handleRankIconChange(rankName: string, iconUrl: string) {
+    const updatedRanks = customRanks.map(r => r.name === rankName ? { ...r, iconUrl } : r);
+    setCustomRanks(updatedRanks);
+  };
+
+  async function handleSaveRanks() {
+    if (!firestore || !units) return;
+
+    // This will update all units with the new ranks.
+    // A better approach for a larger app would be a shared 'config' document.
+    const batch = units.map(unit => {
+        const unitRef = doc(firestore, 'units', unit.id);
+        return setDocumentNonBlocking(unitRef, { ranks: customRanks }, { merge: true });
+    });
+    
+    await Promise.all(batch);
+
+    toast({
+      title: 'Patentes Atualizadas!',
+      description: 'Os ícones das patentes foram salvos para todas as unidades.',
+    });
   }
 
   if (!isAuthenticated) {
@@ -334,6 +361,42 @@ export default function AdminPage() {
               </Form>
             </CardContent>
           </Card>
+          
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Star />
+                Gerenciar Patentes
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {customRanks.map(rank => (
+                <div key={rank.name} className="flex items-center gap-4">
+                  <Label htmlFor={`rank-icon-${rank.name}`} className="w-24 flex-shrink-0">{rank.name}</Label>
+                  <div className="relative flex-grow">
+                     <Input
+                        id={`rank-icon-${rank.name}`}
+                        type="text"
+                        placeholder="URL do ícone"
+                        value={rank.iconUrl || ''}
+                        onChange={(e) => handleRankIconChange(rank.name, e.target.value)}
+                        className="pl-8"
+                      />
+                      <div className="absolute inset-y-0 left-0 flex items-center pl-2">
+                        {rank.iconUrl ? (
+                          <img src={rank.iconUrl} alt={rank.name} className="h-5 w-5 object-contain" />
+                        ) : (
+                          <Upload className="h-5 w-5 text-muted-foreground" />
+                        )}
+                      </div>
+                  </div>
+                </div>
+              ))}
+              <Button onClick={handleSaveRanks} className="w-full mt-4">
+                Salvar Ícones de Patente
+              </Button>
+            </CardContent>
+          </Card>
 
           <Card>
             <CardHeader>
@@ -460,5 +523,3 @@ function EditUnitForm({ unit, onUpdate }: { unit: Unit, onUpdate: (values: Parti
     </Form>
   )
 }
-
-    

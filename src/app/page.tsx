@@ -4,14 +4,14 @@
 import { useMemo } from 'react';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Users, Shield, Mountain, Gem, BookOpen, Star, Trophy, type LucideIcon, Award } from 'lucide-react';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Users, Shield, Mountain, Gem, BookOpen, Star, Trophy, type LucideIcon } from 'lucide-react';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import Image from 'next/image';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, query } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
-import type { Unit, Member } from '@/lib/types';
-import { getRankForScore } from '@/lib/ranks';
+import type { Unit, Member, Rank } from '@/lib/types';
+import { getRankForScore, ranks as defaultRanks } from '@/lib/ranks';
 
 
 const iconMap: { [key: string]: LucideIcon } = {
@@ -35,15 +35,16 @@ export default function Home() {
   const top5Members = useMemo(() => {
     if (!units) return [];
     
-    const allMembers: (Member & { avatarFallback?: string, patent?: { name: string, Icon: LucideIcon }})[] = units.flatMap(unit => 
-        (unit.members || []).map(member => ({ 
+    const allMembers: (Member & { avatarFallback?: string, patent?: Rank })[] = units.flatMap(unit => {
+        const customRanks = unit.ranks && unit.ranks.length > 0 ? unit.ranks : defaultRanks;
+        return (unit.members || []).map(member => ({ 
             ...member, 
             unitName: unit.name,
             unitId: unit.id,
             avatarFallback: member.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase(),
-            patent: getRankForScore(member.score || 0)
+            patent: getRankForScore(member.score || 0, customRanks)
         }))
-    );
+    });
 
     return allMembers
         .filter(member => typeof member.score === 'number')
@@ -122,7 +123,7 @@ export default function Home() {
               <CardContent>
                 <ul className="space-y-4">
                   {top5Members.map((member, index) => {
-                    const PatentIcon = member.patent?.Icon || Award;
+                    const PatentIcon = member.patent?.Icon;
                     return (
                         <li key={member.id} className="flex items-center justify-between p-3 bg-card rounded-lg border hover:bg-muted/50 transition-colors">
                         <div className="flex items-center gap-4">
@@ -134,7 +135,11 @@ export default function Home() {
                             <p className="font-semibold">{member.name}</p>
                             {member.patent && (
                                 <p className="text-sm text-muted-foreground flex items-center gap-1">
-                                    <PatentIcon className="h-4 w-4" />
+                                    {member.patent.iconUrl ? (
+                                      <Image src={member.patent.iconUrl} alt={member.patent.name} width={16} height={16} className="object-contain" />
+                                    ) : PatentIcon ? (
+                                      <PatentIcon className="h-4 w-4" />
+                                    ) : null}
                                     {member.patent.name}
                                 </p>
                             )}

@@ -30,6 +30,7 @@ export type Unit = {
   icon: string;
   scoringCriteria: ScoringCriterion[];
   scoreHistory?: ScoreInfo[];
+  ranks?: Rank[];
 };
 
 export type MemberScore = {

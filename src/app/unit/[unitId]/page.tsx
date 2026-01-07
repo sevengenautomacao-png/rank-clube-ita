@@ -4,7 +4,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Plus, Trash2, User, Users, Settings, Shield, Mountain, Gem, BookOpen, Star, type LucideIcon, FilePlus2, GripVertical, Edit, Download, Award } from 'lucide-react';
+import Image from 'next/image';
+import { ArrowLeft, Plus, Trash2, User, Users, Settings, Shield, Mountain, Gem, BookOpen, Star, type LucideIcon, FilePlus2, GripVertical, Edit, Download } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -22,7 +23,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useDoc, useFirestore, useMemoFirebase, setDocumentNonBlocking } from '@/firebase';
 import { doc } from 'firebase/firestore';
-import { getRankForScore, Rank } from '@/lib/ranks';
+import { getRankForScore, Rank, ranks as defaultRanks } from '@/lib/ranks';
 
 
 const iconMap: { [key: string]: LucideIcon } = {
@@ -63,6 +64,8 @@ export default function UnitPage() {
   const [localUnitIcon, setLocalUnitIcon] = useState("Shield");
   const [localUnitPassword, setLocalUnitPassword] = useState("");
 
+  const customRanks = useMemo(() => (unit?.ranks && unit.ranks.length > 0 ? unit.ranks : defaultRanks), [unit]);
+
   useEffect(() => {
     if (unit) {
       if (!unit.password) {
@@ -71,7 +74,7 @@ export default function UnitPage() {
       setMembers(unit.members?.map(m => ({ 
         ...m, 
         score: m.score ?? 0,
-        patent: getRankForScore(m.score ?? 0),
+        patent: getRankForScore(m.score ?? 0, customRanks),
       })) || []);
       setScoringCriteria(unit.scoringCriteria || []);
       const history = (unit.scoreHistory || []).map(sh => {
@@ -90,7 +93,7 @@ export default function UnitPage() {
         setBackground({ type: 'color', value: '' });
       }
     }
-  }, [unit]);
+  }, [unit, customRanks]);
 
   const handlePasswordSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -126,7 +129,7 @@ export default function UnitPage() {
   const updateMembersWithRank = (membersToUpdate: Member[]): (Member & { patent: Rank })[] => {
     return membersToUpdate.map(m => ({
       ...m,
-      patent: getRankForScore(m.score ?? 0)
+      patent: getRankForScore(m.score ?? 0, customRanks)
     }));
   };
 
@@ -578,7 +581,7 @@ export default function UnitPage() {
           <div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {members.map(member => {
-                  const PatentIcon = member.patent?.Icon || Award;
+                  const PatentIcon = member.patent?.Icon;
                   return (
                     <Card key={member.id} className="relative group flex flex-col bg-card/80 backdrop-blur-sm border">
                     <CardHeader>
@@ -595,7 +598,11 @@ export default function UnitPage() {
                         <p><strong className="text-foreground">Classe:</strong> {member.className}</p>
                         {member.patent && (
                         <div className="flex items-center pt-2 gap-2">
-                            <PatentIcon className="h-5 w-5 text-primary" />
+                            {member.patent.iconUrl ? (
+                                <Image src={member.patent.iconUrl} alt={member.patent.name} width={20} height={20} className="object-contain" />
+                            ) : PatentIcon ? (
+                                <PatentIcon className="h-5 w-5 text-primary" />
+                            ) : null}
                             <p><strong className="text-foreground">Patente:</strong> {member.patent.name}</p>
                         </div>
                         )}
