@@ -308,12 +308,20 @@ export default function AdminPage() {
                             <li key={unit.id} className="flex items-center justify-between p-3 bg-card rounded-lg border">
                                 <Link href={`/unit/${unit.id}`} className="font-medium hover:underline">{unit.name}</Link>
                                 <div className="flex items-center gap-2">
-                                    <SheetTrigger asChild>
-                                      <Button variant="outline" size="icon" onClick={() => setEditingUnit(unit)}>
-                                          <Edit />
-                                          <span className="sr-only">Editar {unit.name}</span>
-                                      </Button>
-                                    </SheetTrigger>
+                                    <Sheet open={editingUnit?.id === unit.id} onOpenChange={(isOpen) => !isOpen && setEditingUnit(null)}>
+                                        <SheetTrigger asChild>
+                                          <Button variant="outline" size="icon" onClick={() => setEditingUnit(unit)}>
+                                              <Edit />
+                                              <span className="sr-only">Editar {unit.name}</span>
+                                          </Button>
+                                        </SheetTrigger>
+                                        <SheetContent>
+                                          <SheetHeader>
+                                            <SheetTitle>Editar Unidade: {editingUnit?.name}</SheetTitle>
+                                          </SheetHeader>
+                                          {editingUnit && <EditUnitForm unit={editingUnit} onUpdate={handleUpdateUnit} />}
+                                        </SheetContent>
+                                    </Sheet>
                                     <AlertDialog>
                                         <AlertDialogTrigger asChild>
                                             <Button variant="destructive" size="icon">
@@ -347,14 +355,6 @@ export default function AdminPage() {
           </Card>
         </div>
       </div>
-      <Sheet open={!!editingUnit} onOpenChange={(isOpen) => !isOpen && setEditingUnit(null)}>
-        <SheetContent>
-          <SheetHeader>
-            <SheetTitle>Editar Unidade: {editingUnit?.name}</SheetTitle>
-          </SheetHeader>
-          {editingUnit && <EditUnitForm unit={editingUnit} onUpdate={handleUpdateUnit} />}
-        </SheetContent>
-      </Sheet>
     </main>
   );
 }
@@ -418,5 +418,3 @@ function EditUnitForm({ unit, onUpdate }: { unit: Unit, onUpdate: (values: Parti
     </Form>
   )
 }
-
-    
