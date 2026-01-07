@@ -10,8 +10,8 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        body: ['"PT Sans"', 'sans-serif'],
-        headline: ['"PT Sans"', 'sans-serif'],
+        body: ['"Press Start 2P"', 'cursive'],
+        headline: ['"Press Start 2P"', 'cursive'],
         code: ['monospace'],
       },
       colors: {

@@ -56,10 +56,10 @@ export default function Home() {
     <div className="flex flex-col min-h-screen">
       <main className="flex-grow flex flex-col items-center p-4 sm:p-8 bg-background">
         <header className="text-center mb-8 sm:mb-12">
-          <h1 className="text-4xl sm:text-5xl font-bold font-headline text-primary">
+          <h1 className="text-2xl sm:text-4xl font-bold font-headline text-primary">
             Rank Clube Ita
           </h1>
-          <p className="text-lg text-muted-foreground mt-2">
+          <p className="text-sm text-muted-foreground mt-2">
             Gerencie as unidades de desbravadores.
           </p>
         </header>
@@ -77,7 +77,7 @@ export default function Home() {
             return (
               <Link href={`/unit/${unit.id}`} key={unit.id} className="transform transition-transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-ring rounded-lg">
                 <Card 
-                    className="aspect-square flex flex-col justify-end p-4 hover:border-primary border-2 border-transparent transition-colors duration-300 relative overflow-hidden"
+                    className="aspect-square flex flex-col justify-end p-4 hover:border-primary border-2 border-transparent transition-colors duration-300 relative overflow-hidden rounded-none"
                     style={{ backgroundColor: unit.cardColor && !unit.cardImageUrl ? unit.cardColor : undefined }}
                 >
                   {unit.cardImageUrl ? (
@@ -91,7 +91,7 @@ export default function Home() {
                   ) : (
                     <div className="absolute inset-0 z-0" style={{backgroundColor: unit.cardColor || 'transparent'}}></div>
                   )}
-                  <div className="relative z-10 bg-black/50 p-4 rounded-lg mt-auto">
+                  <div className="relative z-10 bg-black/50 p-4 mt-auto">
                     <CardHeader className="flex flex-row items-center justify-between text-left pb-2 p-0">
                       <div className='flex items-center gap-2'>
                         {unit.iconUrl ? (
@@ -99,11 +99,11 @@ export default function Home() {
                         ) : (
                           <Icon className="h-8 w-8 text-primary" />
                         )}
-                        <CardTitle className="text-2xl font-bold text-white">{unit.name}</CardTitle>
+                        <CardTitle className="text-xl font-bold text-white">{unit.name}</CardTitle>
                       </div>
                     </CardHeader>
                     <CardContent className="p-0">
-                      <div className="flex items-center gap-2 text-lg text-gray-200">
+                      <div className="flex items-center gap-2 text-base text-gray-200">
                         <Users className="h-5 w-5" />
                         <span>{unit.members?.length || 0} membro(s)</span>
                       </div>
@@ -117,7 +117,7 @@ export default function Home() {
         
         {top5Members.length > 0 && (
           <section className="w-full max-w-4xl mt-12">
-            <Card>
+            <Card className="border-2 rounded-none">
               <CardHeader>
                 <div className="flex items-center gap-2">
                     <Trophy className="h-6 w-6 text-yellow-400" />
