@@ -34,18 +34,20 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking, setDocumentNonBlocking, useAuth } from '@/firebase';
 import { collection, query, doc } from 'firebase/firestore';
-import { GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
+import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { Skeleton } from '@/components/ui/skeleton';
 import { defaultScoringCriteria } from '@/lib/data';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Label } from '@/components/ui/label';
 
-// TODO: Change this to your administrator's Google account email.
-const ADMIN_EMAIL = "admin@example.com";
-
 const formSchema = z.object({
   name: z.string().min(2, { message: 'O nome deve ter pelo menos 2 caracteres.' }),
   password: z.string().optional(),
+});
+
+const loginFormSchema = z.object({
+  email: z.string().email({ message: "Por favor, insira um email válido." }),
+  password: z.string().min(6, { message: "A senha deve ter pelo menos 6 caracteres." }),
 });
 
 export default function AdminPage() {
@@ -72,23 +74,24 @@ export default function AdminPage() {
     },
   });
 
-   const handleGoogleSignIn = async () => {
+  const loginForm = useForm<z.infer<typeof loginFormSchema>>({
+    resolver: zodResolver(loginFormSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+  });
+
+   const handleEmailPasswordSignIn = async (values: z.infer<typeof loginFormSchema>) => {
     if (!auth) return;
     setIsAuthLoading(true);
-    const provider = new GoogleAuthProvider();
     try {
-      const result = await signInWithPopup(auth, provider);
-      const user = result.user;
-      if (user.email === ADMIN_EMAIL) {
-        setIsAuthenticated(true);
-        toast({ title: "Acesso concedido!" });
-      } else {
-        await signOut(auth);
-        toast({ variant: 'destructive', title: "Acesso negado!", description: "Esta conta não tem permissão de administrador." });
-      }
+      await signInWithEmailAndPassword(auth, values.email, values.password);
+      setIsAuthenticated(true);
+      toast({ title: "Acesso concedido!" });
     } catch (error) {
       console.error("Authentication error:", error);
-      toast({ variant: 'destructive', title: "Erro de autenticação!", description: "Não foi possível fazer login com o Google." });
+      toast({ variant: 'destructive', title: "Erro de autenticação!", description: "Email ou senha incorretos." });
     } finally {
         setIsAuthLoading(false);
     }
@@ -98,6 +101,7 @@ export default function AdminPage() {
     if (!auth) return;
     await signOut(auth);
     setIsAuthenticated(false);
+    loginForm.reset();
     toast({ title: "Você saiu." });
   }
 
@@ -181,9 +185,39 @@ export default function AdminPage() {
                         <CardTitle>Área Administrativa</CardTitle>
                     </CardHeader>
                     <CardContent>
-                       <Button onClick={handleGoogleSignIn} className="w-full" disabled={isAuthLoading || !auth}>
-                          {isAuthLoading ? "Verificando..." : "Entrar com Google"}
-                        </Button>
+                      <Form {...loginForm}>
+                        <form onSubmit={loginForm.handleSubmit(handleEmailPasswordSignIn)} className="space-y-4">
+                          <FormField
+                            control={loginForm.control}
+                            name="email"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Email</FormLabel>
+                                <FormControl>
+                                  <Input type="email" placeholder="admin@email.com" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={loginForm.control}
+                            name="password"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Senha</FormLabel>
+                                <FormControl>
+                                  <Input type="password" placeholder="********" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <Button type="submit" className="w-full" disabled={isAuthLoading || !auth}>
+                            {isAuthLoading ? "Verificando..." : "Entrar"}
+                          </Button>
+                        </form>
+                      </Form>
                     </CardContent>
                 </Card>
             </div>
