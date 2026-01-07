@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from 'react';
@@ -99,7 +100,7 @@ export default function AdminPage() {
 
   return (
     <main className="flex flex-col items-center min-h-screen p-4 sm:p-8 bg-background">
-      <header className="w-full max-w-4xl flex items-start mb-8 sm:mb-12">
+      <header className="w-full max-w-xl flex items-start mb-8 sm:mb-12">
         <Button variant="outline" size="icon" asChild>
           <Link href="/" aria-label="Voltar para o início">
             <ArrowLeft />
@@ -177,7 +178,7 @@ export default function AdminPage() {
                                                 <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
                                                 <AlertDialogDescription>
                                                     Essa ação não pode ser desfeita. Isso irá excluir permanentemente a unidade "{unit.name}".
-                                                </AlertDialogDescription>
+                                                </D_escription>
                                             </AlertDialogHeader>
                                             <AlertDialogFooter>
                                                 <AlertDialogCancel>Cancelar</AlertDialogCancel>
