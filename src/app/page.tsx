@@ -63,10 +63,9 @@ export default function Home() {
            <h1 className="text-2xl sm:text-4xl font-bold text-primary">
             Rank Clube Ita
           </h1>
-            <p className="text-sm text-muted-foreground mt-2 mb-4">
-              Gerencie as unidades de desbravadores.
-            </p>
-           <ThemeSwitcher />
+           <div className="mt-4">
+            <ThemeSwitcher />
+          </div>
         </header>
 
         <div className="w-full max-w-4xl grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -178,8 +177,9 @@ export default function Home() {
         )}
 
       </main>
-      <footer className="w-full py-4 px-8 mt-auto border-t border-border text-center text-muted-foreground">
-        <Link href="/admin" className="hover:text-primary transition-colors">
+      <footer className="w-full py-4 px-8 mt-auto border-t border-border text-center text-xs text-muted-foreground">
+        <p>Ita diretoria todos os direitos reservados.</p>
+        <Link href="/admin" className="hover:text-primary transition-colors text-xs">
           Área Administrativa
         </Link>
       </footer>
