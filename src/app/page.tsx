@@ -11,7 +11,7 @@ import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, query } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { Unit, Member, Rank } from '@/lib/types';
-import { getRankForScore, getRanks } from '@/lib/ranks';
+import { getRankForScore } from '@/lib/ranks';
 
 
 const iconMap: { [key: string]: LucideIcon } = {
@@ -36,7 +36,6 @@ export default function Home() {
     if (!units) return [];
     
     const allMembers: (Member & { avatarFallback?: string, patent?: Rank })[] = units.flatMap(unit => {
-        const customRanks = getRanks(unit.ranks);
         return (unit.members || []).map(member => ({ 
             ...member, 
             unitName: unit.name,
@@ -95,7 +94,11 @@ export default function Home() {
                   <div className="relative z-10 bg-black/50 p-4 rounded-lg mt-auto">
                     <CardHeader className="flex flex-row items-center justify-between text-left pb-2 p-0">
                       <div className='flex items-center gap-2'>
-                        <Icon className="h-8 w-8 text-primary" />
+                        {unit.iconUrl ? (
+                          <img src={unit.iconUrl} alt={unit.name} className="h-8 w-8 object-contain" />
+                        ) : (
+                          <Icon className="h-8 w-8 text-primary" />
+                        )}
                         <CardTitle className="text-2xl font-bold text-white">{unit.name}</CardTitle>
                       </div>
                     </CardHeader>

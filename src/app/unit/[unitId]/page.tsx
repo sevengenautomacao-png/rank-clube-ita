@@ -23,7 +23,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useDoc, useFirestore, useMemoFirebase, setDocumentNonBlocking } from '@/firebase';
 import { doc } from 'firebase/firestore';
-import { getRankForScore, getRanks } from '@/lib/ranks';
+import { getRankForScore } from '@/lib/ranks';
 
 
 const iconMap: { [key: string]: LucideIcon } = {
@@ -62,9 +62,8 @@ export default function UnitPage() {
   const [background, setBackground] = useState({ type: 'color', value: '' });
   const [localUnitName, setLocalUnitName] = useState("");
   const [localUnitIcon, setLocalUnitIcon] = useState("Shield");
+  const [localUnitIconUrl, setLocalUnitIconUrl] = useState("");
   const [localUnitPassword, setLocalUnitPassword] = useState("");
-
-  const customRanks = useMemo(() => getRanks(unit?.ranks), [unit]);
 
   useEffect(() => {
     if (unit) {
@@ -84,6 +83,7 @@ export default function UnitPage() {
       setScoreHistory(history);
       setLocalUnitName(unit.name);
       setLocalUnitIcon(unit.icon || "Shield");
+      setLocalUnitIconUrl(unit.iconUrl || "");
       setLocalUnitPassword(unit.password || '');
       if (unit.cardImageUrl) {
         setBackground({ type: 'image', value: unit.cardImageUrl });
@@ -111,6 +111,7 @@ export default function UnitPage() {
     const updatedUnitData: Partial<Unit> = {
       name: localUnitName,
       icon: localUnitIcon,
+      iconUrl: localUnitIconUrl,
       password: localUnitPassword,
       cardImageUrl: background.type === 'image' ? background.value : "",
       cardColor: background.type === 'color' ? background.value : "",
@@ -474,7 +475,7 @@ export default function UnitPage() {
                         />
                     </div>
                      <div>
-                        <Label htmlFor="unit-icon">Ícone da Unidade</Label>
+                        <Label htmlFor="unit-icon">Ícone da Unidade (Padrão)</Label>
                         <Select value={localUnitIcon} onValueChange={setLocalUnitIcon}>
                             <SelectTrigger id="unit-icon">
                                 <SelectValue placeholder="Selecione um ícone" />
@@ -493,6 +494,17 @@ export default function UnitPage() {
                                 })}
                             </SelectContent>
                         </Select>
+                    </div>
+                     <div>
+                        <Label htmlFor="unit-icon-url">URL do Ícone da Unidade (Opcional)</Label>
+                        <Input
+                            id="unit-icon-url"
+                            type="text"
+                            placeholder="https://exemplo.com/icone.png"
+                            value={localUnitIconUrl}
+                            onChange={(e) => setLocalUnitIconUrl(e.target.value)}
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">Deixe em branco para usar o ícone padrão.</p>
                     </div>
                     <div>
                         <Label htmlFor="unit-password">Senha da Unidade</Label>

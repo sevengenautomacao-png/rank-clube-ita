@@ -38,6 +38,7 @@ export type Unit = {
   cardImageUrl?: string;
   cardColor?: string;
   icon: string;
+  iconUrl?: string;
   scoringCriteria: ScoringCriterion[];
   scoreHistory?: ScoreInfo[];
   ranks?: RankData[];
