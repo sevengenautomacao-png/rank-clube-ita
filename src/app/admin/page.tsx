@@ -33,8 +33,8 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking, setDocumentNonBlocking, useAuth } from '@/firebase';
-import { collection, query, doc, setPersistence, browserLocalPersistence, browserSessionPersistence } from 'firebase/firestore';
-import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
+import { collection, query, doc } from 'firebase/firestore';
+import { signInWithEmailAndPassword, signOut, setPersistence, browserLocalPersistence, browserSessionPersistence } from 'firebase/auth';
 import { Skeleton } from '@/components/ui/skeleton';
 import { defaultScoringCriteria } from '@/lib/data';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
@@ -91,8 +91,7 @@ export default function AdminPage() {
     setIsAuthLoading(true);
     try {
       const persistence = values.rememberMe ? browserLocalPersistence : browserSessionPersistence;
-      // This function from 'firebase/auth' is what you need
-      await import('firebase/auth').then(({ setPersistence }) => setPersistence(auth, persistence));
+      await setPersistence(auth, persistence);
 
       await signInWithEmailAndPassword(auth, values.email, values.password);
       setIsAuthenticated(true);
@@ -461,3 +460,5 @@ function EditUnitForm({ unit, onUpdate }: { unit: Unit, onUpdate: (values: Parti
     </Form>
   )
 }
+
+    
