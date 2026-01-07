@@ -1,3 +1,5 @@
+import type { Rank } from './ranks';
+
 export type ScoringCriterion = {
   id: string;
   label: string;
@@ -12,7 +14,7 @@ export type Member = {
   className: string; // 'classe'
   score: number;
   ranking: number;
-  patent?: string;
+  patent?: Rank;
   unitName?: string;
   unitId?: string;
   avatarFallback?: string;

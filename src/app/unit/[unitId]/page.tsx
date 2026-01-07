@@ -22,7 +22,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useDoc, useFirestore, useMemoFirebase, setDocumentNonBlocking } from '@/firebase';
 import { doc } from 'firebase/firestore';
-import { getRankForScore } from '@/lib/ranks';
+import { getRankForScore, Rank } from '@/lib/ranks';
 
 
 const iconMap: { [key: string]: LucideIcon } = {
@@ -50,11 +50,11 @@ export default function UnitPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [passwordInput, setPasswordInput] = useState('');
 
-  const [members, setMembers] = useState<Member[]>([]);
+  const [members, setMembers] = useState<(Member & { patent: Rank })[]>([]);
   const [scoringCriteria, setScoringCriteria] = useState<ScoringCriterion[]>([]);
   const [scoreHistory, setScoreHistory] = useState<ScoreInfo[]>([]);
   const [isAddMemberSheetOpen, setAddMemberSheetOpen] = useState(false);
-  const [editingMember, setEditingMember] = useState<Member | null>(null);
+  const [editingMember, setEditingMember] = useState<(Member & { patent: Rank }) | null>(null);
   const [isSettingsSheetOpen, setSettingsSheetOpen] = useState(false);
   const [isGenerateScoreDialogOpen, setGenerateScoreDialogOpen] = useState(false);
   const [editingReport, setEditingReport] = useState<ScoreInfo | null>(null);
@@ -123,7 +123,7 @@ export default function UnitPage() {
     setSettingsSheetOpen(false);
   };
 
-  const updateMembersWithRank = (membersToUpdate: Member[]): Member[] => {
+  const updateMembersWithRank = (membersToUpdate: Member[]): (Member & { patent: Rank })[] => {
     return membersToUpdate.map(m => ({
       ...m,
       patent: getRankForScore(m.score ?? 0)
@@ -150,7 +150,7 @@ export default function UnitPage() {
   };
   
   const handleUpdateMember = (updatedMemberData: Member) => {
-    const updatedMembers = updateMembersWithRank(members.map(member => member.id === updatedMemberData.id ? updatedMemberData : member));
+    const updatedMembers = updateMembersWithRank(members.map(member => member.id === updatedMemberData.id ? {...member, ...updatedMemberData} : member));
     setMembers(updatedMembers);
     if (unitRef) {
       setDocumentNonBlocking(unitRef, { members: updatedMembers.map(({patent, ...m}) => m) }, { merge: true });
@@ -302,7 +302,7 @@ export default function UnitPage() {
             'Ranking': index + 1,
             'Nome': member.name,
             'Pontuação Total': member.score,
-            'Patente': getRankForScore(member.score),
+            'Patente': member.patent.name,
             'Classe': member.className,
             'Função': member.role,
             'Idade': member.age,
@@ -345,7 +345,7 @@ export default function UnitPage() {
   const pageStyle: React.CSSProperties =
     background.type === 'image' && background.value
       ? { backgroundImage: `url(${background.value})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed' }
-      : { backgroundColor: background.value || 'transparent' };
+      : { backgroundColor: 'transparent' };
 
 
   if (isUnitLoading) {
@@ -396,7 +396,9 @@ export default function UnitPage() {
   if (!isAuthenticated) {
     return (
       <main className="flex items-center justify-center min-h-screen bg-background/80 backdrop-blur-sm" style={pageStyle}>
-        <div className="container mx-auto p-4 sm:p-8 bg-card/90 backdrop-blur-sm rounded-lg max-w-md border">
+        <div className="fixed inset-0 bg-cover bg-center" style={background.type === 'image' && background.value ? {backgroundImage: `url(${background.value})`} : {backgroundColor: background.value || 'transparent'}}></div>
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm"></div>
+        <div className="container relative mx-auto p-4 sm:p-8 bg-card/90 backdrop-blur-sm rounded-lg max-w-md border">
             <header className="flex items-center gap-4 mb-8">
                 <Button variant="outline" size="icon" asChild>
                     <Link href="/" aria-label="Voltar para o início">
@@ -432,7 +434,9 @@ export default function UnitPage() {
 
   return (
     <main className="min-h-screen" style={pageStyle}>
-      <div className="container mx-auto p-4 sm:p-8 bg-background/80 backdrop-blur-sm min-h-screen rounded-lg border">
+        <div className="fixed inset-0 bg-cover bg-center" style={background.type === 'image' && background.value ? {backgroundImage: `url(${background.value})`} : {backgroundColor: background.value || 'transparent'}}></div>
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm"></div>
+      <div className="container relative mx-auto p-4 sm:p-8 min-h-screen">
         <header className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
             <Button variant="outline" size="icon" asChild>
@@ -573,41 +577,44 @@ export default function UnitPage() {
         {members.length > 0 ? (
           <div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {members.map(member => (
-                <Card key={member.id} className="relative group flex flex-col bg-card/80 backdrop-blur-sm">
-                  <CardHeader>
-                    <div className="flex items-center gap-4">
-                      <div className="bg-primary/20 p-3 rounded-full">
-                        <User className="h-6 w-6 text-primary" />
-                      </div>
-                      <CardTitle className="text-xl">{member.name}</CardTitle>
+              {members.map(member => {
+                  const PatentIcon = member.patent?.Icon || Award;
+                  return (
+                    <Card key={member.id} className="relative group flex flex-col bg-card/80 backdrop-blur-sm border">
+                    <CardHeader>
+                        <div className="flex items-center gap-4">
+                        <div className="bg-primary/20 p-3 rounded-full">
+                            <User className="h-6 w-6 text-primary" />
+                        </div>
+                        <CardTitle className="text-xl">{member.name}</CardTitle>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="space-y-2 text-sm text-muted-foreground flex-grow">
+                        <p><strong className="text-foreground">Idade:</strong> {member.age}</p>
+                        <p><strong className="text-foreground">Função:</strong> {member.role}</p>
+                        <p><strong className="text-foreground">Classe:</strong> {member.className}</p>
+                        {member.patent && (
+                        <div className="flex items-center pt-2 gap-2">
+                            <PatentIcon className="h-5 w-5 text-primary" />
+                            <p><strong className="text-foreground">Patente:</strong> {member.patent.name}</p>
+                        </div>
+                        )}
+                        {member.score !== undefined && (
+                        <div className="flex items-center pt-2 gap-2">
+                            <Star className="h-5 w-5 text-yellow-400" />
+                            <p><strong className="text-foreground">Pontuação Total:</strong> {member.score}</p>
+                        </div>
+                        )}
+                    </CardContent>
+                    <div className="absolute top-4 right-4 opacity-100 md:group-hover:opacity-100 transition-opacity focus-within:opacity-100">
+                        <Button variant="outline" size="icon" onClick={() => setEditingMember(member)}>
+                        <Edit className="h-4 w-4" />
+                        <span className="sr-only">Editar {member.name}</span>
+                        </Button>
                     </div>
-                  </CardHeader>
-                  <CardContent className="space-y-2 text-sm text-muted-foreground flex-grow">
-                    <p><strong className="text-foreground">Idade:</strong> {member.age}</p>
-                    <p><strong className="text-foreground">Função:</strong> {member.role}</p>
-                    <p><strong className="text-foreground">Classe:</strong> {member.className}</p>
-                    {member.patent && (
-                      <div className="flex items-center pt-2">
-                          <Award className="h-5 w-5 text-primary mr-2" />
-                          <p><strong className="text-foreground">Patente:</strong> {member.patent}</p>
-                      </div>
-                    )}
-                    {member.score !== undefined && (
-                      <div className="flex items-center pt-2">
-                          <Star className="h-5 w-5 text-yellow-400 mr-2" />
-                          <p><strong className="text-foreground">Pontuação Total:</strong> {member.score}</p>
-                      </div>
-                    )}
-                  </CardContent>
-                  <div className="absolute top-4 right-4 opacity-100 md:group-hover:opacity-100 transition-opacity focus-within:opacity-100">
-                    <Button variant="outline" size="icon" onClick={() => setEditingMember(member)}>
-                      <Edit className="h-4 w-4" />
-                       <span className="sr-only">Editar {member.name}</span>
-                    </Button>
-                  </div>
-                </Card>
-              ))}
+                    </Card>
+                )
+              })}
             </div>
             <div className="mt-8 flex justify-center">
                 <Dialog open={isGenerateScoreDialogOpen} onOpenChange={(isOpen) => {

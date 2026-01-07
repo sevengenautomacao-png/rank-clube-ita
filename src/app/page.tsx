@@ -35,7 +35,7 @@ export default function Home() {
   const top5Members = useMemo(() => {
     if (!units) return [];
     
-    const allMembers: Member[] = units.flatMap(unit => 
+    const allMembers: (Member & { avatarFallback?: string, patent?: { name: string, Icon: LucideIcon }})[] = units.flatMap(unit => 
         (unit.members || []).map(member => ({ 
             ...member, 
             unitName: unit.name,
@@ -121,30 +121,35 @@ export default function Home() {
               </CardHeader>
               <CardContent>
                 <ul className="space-y-4">
-                  {top5Members.map((member, index) => (
-                    <li key={member.id} className="flex items-center justify-between p-3 bg-card rounded-lg border hover:bg-muted/50 transition-colors">
-                      <div className="flex items-center gap-4">
-                        <span className="text-lg font-bold w-6 text-center">{index + 1}</span>
-                        <Avatar>
-                            <AvatarFallback>{member.avatarFallback}</AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <p className="font-semibold">{member.name}</p>
-                          <p className="text-sm text-muted-foreground flex items-center gap-1">
-                            <Award className="h-4 w-4" />
-                            {member.patent}
-                          </p>
-                          <Link href={`/unit/${member.unitId}`} className="text-sm text-muted-foreground hover:underline">
-                            Unidade: {member.unitName}
-                          </Link>
+                  {top5Members.map((member, index) => {
+                    const PatentIcon = member.patent?.Icon || Award;
+                    return (
+                        <li key={member.id} className="flex items-center justify-between p-3 bg-card rounded-lg border hover:bg-muted/50 transition-colors">
+                        <div className="flex items-center gap-4">
+                            <span className="text-lg font-bold w-6 text-center">{index + 1}</span>
+                            <Avatar>
+                                <AvatarFallback>{member.avatarFallback}</AvatarFallback>
+                            </Avatar>
+                            <div>
+                            <p className="font-semibold">{member.name}</p>
+                            {member.patent && (
+                                <p className="text-sm text-muted-foreground flex items-center gap-1">
+                                    <PatentIcon className="h-4 w-4" />
+                                    {member.patent.name}
+                                </p>
+                            )}
+                            <Link href={`/unit/${member.unitId}`} className="text-sm text-muted-foreground hover:underline">
+                                Unidade: {member.unitName}
+                            </Link>
+                            </div>
                         </div>
-                      </div>
-                      <div className="flex items-center gap-2 text-lg font-bold text-yellow-400">
-                        <Star className="h-5 w-5" />
-                        <span>{member.score}</span>
-                      </div>
-                    </li>
-                  ))}
+                        <div className="flex items-center gap-2 text-lg font-bold text-yellow-400">
+                            <Star className="h-5 w-5" />
+                            <span>{member.score}</span>
+                        </div>
+                        </li>
+                    )
+                  })}
                 </ul>
               </CardContent>
             </Card>
