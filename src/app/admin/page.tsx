@@ -5,7 +5,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Plus, Trash2, Edit } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Edit, LogOut } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -32,15 +32,16 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking, setDocumentNonBlocking } from '@/firebase';
+import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking, setDocumentNonBlocking, useAuth } from '@/firebase';
 import { collection, query, doc } from 'firebase/firestore';
+import { GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
 import { Skeleton } from '@/components/ui/skeleton';
 import { defaultScoringCriteria } from '@/lib/data';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Label } from '@/components/ui/label';
 
-// TODO: Move this to a more secure location, like environment variables.
-const ADMIN_PASSWORD = "admin";
+// TODO: Change this to your administrator's Google account email.
+const ADMIN_EMAIL = "admin@example.com";
 
 const formSchema = z.object({
   name: z.string().min(2, { message: 'O nome deve ter pelo menos 2 caracteres.' }),
@@ -51,9 +52,10 @@ export default function AdminPage() {
   const router = useRouter();
   const { toast } = useToast();
   const firestore = useFirestore();
+  const auth = useAuth();
   const [editingUnit, setEditingUnit] = useState<Unit | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [passwordInput, setPasswordInput] = useState('');
+  const [isAuthLoading, setIsAuthLoading] = useState(false);
 
   const unitsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -70,15 +72,34 @@ export default function AdminPage() {
     },
   });
 
-   const handlePasswordSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (passwordInput === ADMIN_PASSWORD) {
-      setIsAuthenticated(true);
-      toast({ title: "Acesso concedido!" });
-    } else {
-      toast({ variant: 'destructive', title: "Senha incorreta!" });
+   const handleGoogleSignIn = async () => {
+    if (!auth) return;
+    setIsAuthLoading(true);
+    const provider = new GoogleAuthProvider();
+    try {
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+      if (user.email === ADMIN_EMAIL) {
+        setIsAuthenticated(true);
+        toast({ title: "Acesso concedido!" });
+      } else {
+        await signOut(auth);
+        toast({ variant: 'destructive', title: "Acesso negado!", description: "Esta conta não tem permissão de administrador." });
+      }
+    } catch (error) {
+      console.error("Authentication error:", error);
+      toast({ variant: 'destructive', title: "Erro de autenticação!", description: "Não foi possível fazer login com o Google." });
+    } finally {
+        setIsAuthLoading(false);
     }
   };
+  
+  const handleSignOut = async () => {
+    if (!auth) return;
+    await signOut(auth);
+    setIsAuthenticated(false);
+    toast({ title: "Você saiu." });
+  }
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!firestore) return;
@@ -101,7 +122,6 @@ export default function AdminPage() {
       scoringCriteria: defaultScoringCriteria
     };
 
-    const unitRef = doc(firestore, 'units', unitId);
     addDocumentNonBlocking(collection(firestore, 'units'), { ...newUnit, id: unitId });
     
     toast({
@@ -153,7 +173,7 @@ export default function AdminPage() {
                     Acesso Restrito
                     </h1>
                     <p className="text-lg text-muted-foreground mt-2">
-                    Digite a senha para gerenciar o aplicativo.
+                    Faça login com uma conta de administrador para gerenciar.
                     </p>
                 </div>
                 <Card>
@@ -161,19 +181,9 @@ export default function AdminPage() {
                         <CardTitle>Área Administrativa</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <form onSubmit={handlePasswordSubmit} className="space-y-4">
-                            <div>
-                                <Label htmlFor="password">Senha</Label>
-                                <Input
-                                    id="password"
-                                    type="password"
-                                    placeholder="Digite a senha"
-                                    value={passwordInput}
-                                    onChange={(e) => setPasswordInput(e.target.value)}
-                                />
-                            </div>
-                            <Button type="submit" className="w-full">Entrar</Button>
-                        </form>
+                       <Button onClick={handleGoogleSignIn} className="w-full" disabled={isAuthLoading || !auth}>
+                          {isAuthLoading ? "Verificando..." : "Entrar com Google"}
+                        </Button>
                     </CardContent>
                 </Card>
             </div>
@@ -183,11 +193,15 @@ export default function AdminPage() {
 
   return (
     <main className="flex flex-col items-center min-h-screen p-4 sm:p-8 bg-background">
-      <header className="w-full max-w-xl flex items-start mb-8 sm:mb-12">
+      <header className="w-full max-w-xl flex items-center justify-between mb-8 sm:mb-12">
         <Button variant="outline" size="icon" asChild>
           <Link href="/" aria-label="Voltar para o início">
             <ArrowLeft />
           </Link>
+        </Button>
+        <Button variant="outline" size="icon" onClick={handleSignOut}>
+            <LogOut />
+            <span className="sr-only">Sair</span>
         </Button>
       </header>
       <div className="w-full max-w-xl">
@@ -260,10 +274,12 @@ export default function AdminPage() {
                             <li key={unit.id} className="flex items-center justify-between p-3 bg-card rounded-lg border">
                                 <Link href={`/unit/${unit.id}`} className="font-medium hover:underline">{unit.name}</Link>
                                 <div className="flex items-center gap-2">
-                                    <Button variant="outline" size="icon" onClick={() => setEditingUnit(unit)}>
-                                        <Edit />
-                                        <span className="sr-only">Editar {unit.name}</span>
-                                    </Button>
+                                    <SheetTrigger asChild>
+                                      <Button variant="outline" size="icon" onClick={() => setEditingUnit(unit)}>
+                                          <Edit />
+                                          <span className="sr-only">Editar {unit.name}</span>
+                                      </Button>
+                                    </SheetTrigger>
                                     <AlertDialog>
                                         <AlertDialogTrigger asChild>
                                             <Button variant="destructive" size="icon">
@@ -368,3 +384,5 @@ function EditUnitForm({ unit, onUpdate }: { unit: Unit, onUpdate: (values: Parti
     </Form>
   )
 }
+
+    
