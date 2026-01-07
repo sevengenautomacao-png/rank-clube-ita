@@ -53,7 +53,7 @@ export default function ScoreReportCard({ report, members, scoringCriteria, onDe
                             <Edit className="h-4 w-4" />
                             <span className="sr-only">Editar Relatório</span>
                         </Button>
-                        <AlertDialog onOpenChange={(e) => e.stopPropagation()}>
+                        <AlertDialog>
                             <AlertDialogTrigger asChild>
                                 <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={(e) => e.stopPropagation()}>
                                     <Trash2 className="h-4 w-4" />
@@ -123,5 +123,3 @@ export default function ScoreReportCard({ report, members, scoringCriteria, onDe
         </Collapsible>
     );
 }
-
-    
