@@ -59,11 +59,13 @@ export default function Home() {
   return (
     <div className={`flex flex-col min-h-screen ${fontClassName}`}>
       <main className="flex-grow flex flex-col items-center p-4 sm:p-8 bg-background">
-        <header className="w-full max-w-4xl flex justify-between items-center text-center mb-8 sm:mb-12">
+        <header className="w-full max-w-4xl relative text-center mb-8 sm:mb-12">
            <h1 className="text-2xl sm:text-4xl font-bold text-primary">
             Rank Clube Ita
           </h1>
-          <ThemeSwitcher />
+          <div className="absolute top-0 right-0">
+            <ThemeSwitcher />
+          </div>
         </header>
         <div className="w-full max-w-4xl text-center mb-8">
           <p className="text-sm text-muted-foreground mt-2">
