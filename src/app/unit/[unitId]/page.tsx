@@ -4,14 +4,16 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Plus, Trash2, User, Users, Settings, Shield, Mountain, Gem, BookOpen, Star, type LucideIcon } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, User, Users, Settings, Shield, Mountain, Gem, BookOpen, Star, type LucideIcon, FilePlus2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { initialUnits } from '@/lib/data';
-import type { Unit, Member } from '@/lib/types';
+import type { Unit, Member, ScoreInfo } from '@/lib/types';
 import AddMemberForm from '@/components/add-member-form';
+import GenerateScoreForm from '@/components/generate-score-form';
 import { useToast } from "@/hooks/use-toast"
 import { Skeleton } from '@/components/ui/skeleton';
 import { Label } from '@/components/ui/label';
@@ -36,6 +38,7 @@ export default function UnitPage() {
   const [members, setMembers] = useState<Member[]>([]);
   const [isAddMemberSheetOpen, setAddMemberSheetOpen] = useState(false);
   const [isSettingsSheetOpen, setSettingsSheetOpen] = useState(false);
+  const [isGenerateScoreDialogOpen, setGenerateScoreDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [background, setBackground] = useState({ type: 'color', value: '#111827' }); // dark gray default
 
@@ -57,12 +60,13 @@ export default function UnitPage() {
       const updatedUnit = { ...unit, members };
       setUnit(updatedUnit);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [members]);
 
   useEffect(() => {
     if (initialUnit) {
       setUnit(initialUnit);
-      setMembers(initialUnit.members.map(m => ({...m, score: m.score ?? undefined})));
+      setMembers(initialUnit.members.map(m => ({...m, score: m.score ?? 0})));
       if (initialUnit.cardImageUrl) {
         setBackground({ type: 'image', value: initialUnit.cardImageUrl });
       } else if (initialUnit.cardColor) {
@@ -104,18 +108,23 @@ export default function UnitPage() {
     setUnit(prevUnit => prevUnit ? {...prevUnit, icon: iconName} : null)
   }
 
-  const handleGenerateAllScores = () => {
-    setMembers(prevMembers => 
-      prevMembers.map(member => ({
-        ...member,
-        score: Math.floor(Math.random() * 101)
-      }))
-    );
-    toast({
-      title: "Pontuações Geradas!",
-      description: `Novas pontuações foram geradas para todos os membros.`,
+  const handleScoresCalculated = (scoreInfo: ScoreInfo) => {
+     setMembers(prevMembers => {
+      return prevMembers.map(member => {
+        const memberScoreUpdate = scoreInfo.memberScores[member.id];
+        if (memberScoreUpdate) {
+          const newScore = (member.score || 0) + memberScoreUpdate.points;
+          return { ...member, score: newScore };
+        }
+        return member;
+      });
     });
-  };
+    setGenerateScoreDialogOpen(false);
+    toast({
+      title: "Pontuações atualizadas!",
+      description: `As pontuações para ${scoreInfo.date.toLocaleDateString()} foram adicionadas.`,
+    });
+  }
 
   const pageStyle: React.CSSProperties =
     background.type === 'image'
@@ -271,7 +280,7 @@ export default function UnitPage() {
                     {member.score !== undefined && (
                       <div className="flex items-center pt-2">
                           <Star className="h-5 w-5 text-yellow-400 mr-2" />
-                          <p><strong className="text-foreground">Pontuação:</strong> {member.score}</p>
+                          <p><strong className="text-foreground">Pontuação Total:</strong> {member.score}</p>
                       </div>
                     )}
                   </CardContent>
@@ -302,9 +311,20 @@ export default function UnitPage() {
               ))}
             </div>
             <div className="mt-8 flex justify-center">
-                <Button onClick={handleGenerateAllScores} variant="secondary" size="lg">
-                    Gerar Pontuação para Todos
-                </Button>
+                <Dialog open={isGenerateScoreDialogOpen} onOpenChange={setGenerateScoreDialogOpen}>
+                    <DialogTrigger asChild>
+                        <Button variant="secondary" size="lg">
+                            <FilePlus2 className="mr-2 h-5 w-5" />
+                            Lançar Pontuação
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-2xl">
+                        <DialogHeader>
+                            <DialogTitle>Lançar nova pontuação</DialogTitle>
+                        </DialogHeader>
+                        <GenerateScoreForm members={members} onScoresCalculated={handleScoresCalculated} />
+                    </DialogContent>
+                </Dialog>
             </div>
           </div>
         ) : (
@@ -318,3 +338,5 @@ export default function UnitPage() {
     </main>
   );
 }
+
+    
