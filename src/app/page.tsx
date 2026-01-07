@@ -179,7 +179,7 @@ export default function Home() {
       </main>
       <footer className="w-full py-4 px-8 mt-auto border-t border-border text-center text-xs text-muted-foreground">
         <p>Ita diretoria todos os direitos reservados.</p>
-        <Link href="/admin" className="hover:text-primary transition-colors text-xs">
+        <Link href="/admin" className="hover:text-primary transition-colors text-xs mt-1 block">
           Área Administrativa
         </Link>
       </footer>
