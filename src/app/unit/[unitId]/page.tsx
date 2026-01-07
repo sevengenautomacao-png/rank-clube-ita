@@ -33,6 +33,17 @@ export default function UnitPage() {
   const initialUnit = useMemo(() => initialUnits.find((u) => u.id === unitId), [unitId]);
 
   useEffect(() => {
+    // This is a temporary solution to update the unit name on the home page.
+    // A proper solution would involve a global state management or passing callbacks.
+    if (unit && unit.name !== initialUnits.find(u => u.id === unitId)?.name) {
+      const unitIndex = initialUnits.findIndex(u => u.id === unitId);
+      if (unitIndex !== -1) {
+        initialUnits[unitIndex].name = unit.name;
+      }
+    }
+  }, [unit, unitId]);
+
+  useEffect(() => {
     if (initialUnit) {
       setUnit(initialUnit);
       setMembers(initialUnit.members);
@@ -135,6 +146,16 @@ export default function UnitPage() {
                   <SheetTitle>Configurações da Unidade</SheetTitle>
                 </SheetHeader>
                 <div className="py-4 space-y-4">
+                    <div>
+                        <Label htmlFor="unit-name">Nome da Unidade</Label>
+                        <Input
+                            id="unit-name"
+                            type="text"
+                            placeholder="Nome da unidade"
+                            value={unit?.name || ''}
+                            onChange={(e) => setUnit(prevUnit => prevUnit ? {...prevUnit, name: e.target.value} : null)}
+                        />
+                    </div>
                     <div>
                         <Label htmlFor="bg-color">Cor de Fundo</Label>
                         <Input 
