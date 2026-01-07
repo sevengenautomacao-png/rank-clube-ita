@@ -4,13 +4,14 @@
 import { useMemo } from 'react';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Users, Shield, Mountain, Gem, BookOpen, Star, Trophy, type LucideIcon } from 'lucide-react';
+import { Users, Shield, Mountain, Gem, BookOpen, Star, Trophy, type LucideIcon, Award } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import Image from 'next/image';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, query } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { Unit, Member } from '@/lib/types';
+import { getRankForScore } from '@/lib/ranks';
 
 
 const iconMap: { [key: string]: LucideIcon } = {
@@ -34,13 +35,13 @@ export default function Home() {
   const top5Members = useMemo(() => {
     if (!units) return [];
     
-    const allMembers = units.flatMap(unit => 
+    const allMembers: Member[] = units.flatMap(unit => 
         (unit.members || []).map(member => ({ 
             ...member, 
             unitName: unit.name,
             unitId: unit.id,
-            // Create a simple avatar from the member's name
-            avatarFallback: member.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()
+            avatarFallback: member.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase(),
+            patent: getRankForScore(member.score || 0)
         }))
     );
 
@@ -129,6 +130,10 @@ export default function Home() {
                         </Avatar>
                         <div>
                           <p className="font-semibold">{member.name}</p>
+                          <p className="text-sm text-muted-foreground flex items-center gap-1">
+                            <Award className="h-4 w-4" />
+                            {member.patent}
+                          </p>
                           <Link href={`/unit/${member.unitId}`} className="text-sm text-muted-foreground hover:underline">
                             Unidade: {member.unitName}
                           </Link>

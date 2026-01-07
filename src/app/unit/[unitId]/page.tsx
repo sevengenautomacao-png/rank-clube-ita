@@ -4,7 +4,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Plus, Trash2, User, Users, Settings, Shield, Mountain, Gem, BookOpen, Star, type LucideIcon, FilePlus2, GripVertical, Edit, Download } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, User, Users, Settings, Shield, Mountain, Gem, BookOpen, Star, type LucideIcon, FilePlus2, GripVertical, Edit, Download, Award } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -22,6 +22,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useDoc, useFirestore, useMemoFirebase, setDocumentNonBlocking } from '@/firebase';
 import { doc } from 'firebase/firestore';
+import { getRankForScore } from '@/lib/ranks';
 
 
 const iconMap: { [key: string]: LucideIcon } = {
@@ -67,7 +68,11 @@ export default function UnitPage() {
       if (!unit.password) {
         setIsAuthenticated(true);
       }
-      setMembers(unit.members?.map(m => ({ ...m, score: m.score ?? 0 })) || []);
+      setMembers(unit.members?.map(m => ({ 
+        ...m, 
+        score: m.score ?? 0,
+        patent: getRankForScore(m.score ?? 0),
+      })) || []);
       setScoringCriteria(unit.scoringCriteria || []);
       const history = (unit.scoreHistory || []).map(sh => {
         const date = sh.date && (sh.date as any).toDate ? (sh.date as any).toDate() : new Date(sh.date);
@@ -118,6 +123,13 @@ export default function UnitPage() {
     setSettingsSheetOpen(false);
   };
 
+  const updateMembersWithRank = (membersToUpdate: Member[]): Member[] => {
+    return membersToUpdate.map(m => ({
+      ...m,
+      patent: getRankForScore(m.score ?? 0)
+    }));
+  };
+
   const handleAddMember = (newMemberData: Omit<Member, 'id' | 'score' | 'ranking'>) => {
     const newMember: Member = {
       ...newMemberData,
@@ -125,10 +137,10 @@ export default function UnitPage() {
       score: 0,
       ranking: 0,
     };
-    const updatedMembers = [...members, newMember];
+    const updatedMembers = updateMembersWithRank([...members, newMember]);
     setMembers(updatedMembers);
     if (unitRef) {
-      setDocumentNonBlocking(unitRef, { members: updatedMembers }, { merge: true });
+      setDocumentNonBlocking(unitRef, { members: updatedMembers.map(({patent, ...m}) => m) }, { merge: true });
     }
     setAddMemberSheetOpen(false);
     toast({
@@ -138,10 +150,10 @@ export default function UnitPage() {
   };
   
   const handleUpdateMember = (updatedMemberData: Member) => {
-    const updatedMembers = members.map(member => member.id === updatedMemberData.id ? updatedMemberData : member);
+    const updatedMembers = updateMembersWithRank(members.map(member => member.id === updatedMemberData.id ? updatedMemberData : member));
     setMembers(updatedMembers);
     if (unitRef) {
-      setDocumentNonBlocking(unitRef, { members: updatedMembers }, { merge: true });
+      setDocumentNonBlocking(unitRef, { members: updatedMembers.map(({patent, ...m}) => m) }, { merge: true });
     }
     setEditingMember(null);
     toast({
@@ -153,9 +165,9 @@ export default function UnitPage() {
   const handleDeleteMember = (memberId: string) => {
     const memberName = members.find(m => m.id === memberId)?.name;
     const updatedMembers = members.filter(m => m.id !== memberId);
-    setMembers(updatedMembers);
+    setMembers(updateMembersWithRank(updatedMembers));
     if (unitRef) {
-      setDocumentNonBlocking(unitRef, { members: updatedMembers }, { merge: true });
+      setDocumentNonBlocking(unitRef, { members: updatedMembers.map(({patent, ...m}) => m) }, { merge: true });
     }
     setEditingMember(null);
     toast({
@@ -220,11 +232,12 @@ export default function UnitPage() {
       });
     }
     
-    setMembers(updatedMembers);
+    const finalMembers = updateMembersWithRank(updatedMembers);
+    setMembers(finalMembers);
     setScoreHistory(updatedScoreHistory);
 
     if (unitRef) {
-      setDocumentNonBlocking(unitRef, { members: updatedMembers, scoreHistory: updatedScoreHistory }, { merge: true });
+      setDocumentNonBlocking(unitRef, { members: finalMembers.map(({patent, ...m}) => m), scoreHistory: updatedScoreHistory }, { merge: true });
     }
 
     setGenerateScoreDialogOpen(false);
@@ -255,7 +268,7 @@ export default function UnitPage() {
     const reportToDelete = scoreHistory.find(r => r.id === reportId);
     if (!reportToDelete) return;
 
-    const updatedMembers = members.map(member => {
+    let updatedMembers = members.map(member => {
       const memberScoreUpdate = reportToDelete.memberScores[member.id];
       if (memberScoreUpdate) {
         const newScore = (member.score || 0) - memberScoreUpdate.points;
@@ -265,11 +278,13 @@ export default function UnitPage() {
     });
 
     const updatedScoreHistory = scoreHistory.filter(r => r.id !== reportId);
-    setMembers(updatedMembers);
+    
+    const finalMembers = updateMembersWithRank(updatedMembers);
+    setMembers(finalMembers);
     setScoreHistory(updatedScoreHistory);
 
     if (unitRef) {
-      setDocumentNonBlocking(unitRef, { members: updatedMembers, scoreHistory: updatedScoreHistory }, { merge: true });
+      setDocumentNonBlocking(unitRef, { members: finalMembers.map(({patent, ...m}) => m), scoreHistory: updatedScoreHistory }, { merge: true });
     }
     const reportDate = reportToDelete.date instanceof Date ? reportToDelete.date : (reportToDelete.date as any).toDate();
 
@@ -287,6 +302,7 @@ export default function UnitPage() {
             'Ranking': index + 1,
             'Nome': member.name,
             'Pontuação Total': member.score,
+            'Patente': getRankForScore(member.score),
             'Classe': member.className,
             'Função': member.role,
             'Idade': member.age,
@@ -571,6 +587,12 @@ export default function UnitPage() {
                     <p><strong className="text-foreground">Idade:</strong> {member.age}</p>
                     <p><strong className="text-foreground">Função:</strong> {member.role}</p>
                     <p><strong className="text-foreground">Classe:</strong> {member.className}</p>
+                    {member.patent && (
+                      <div className="flex items-center pt-2">
+                          <Award className="h-5 w-5 text-primary mr-2" />
+                          <p><strong className="text-foreground">Patente:</strong> {member.patent}</p>
+                      </div>
+                    )}
                     {member.score !== undefined && (
                       <div className="flex items-center pt-2">
                           <Star className="h-5 w-5 text-yellow-400 mr-2" />

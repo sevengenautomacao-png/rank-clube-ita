@@ -12,6 +12,10 @@ export type Member = {
   className: string; // 'classe'
   score: number;
   ranking: number;
+  patent?: string;
+  unitName?: string;
+  unitId?: string;
+  avatarFallback?: string;
 };
 
 export type Unit = {
