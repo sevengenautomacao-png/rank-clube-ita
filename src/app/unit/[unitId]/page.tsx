@@ -347,7 +347,7 @@ export default function UnitPage() {
                       </div>
                     )}
                   </CardContent>
-                  <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity focus-within:opacity-100">
+                  <div className="absolute top-4 right-4 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity focus-within:opacity-100">
                     <Button variant="outline" size="icon" onClick={() => setEditingMember(member)}>
                       <Edit className="h-4 w-4" />
                        <span className="sr-only">Editar {member.name}</span>
@@ -399,3 +399,5 @@ export default function UnitPage() {
     </main>
   );
 }
+
+    
