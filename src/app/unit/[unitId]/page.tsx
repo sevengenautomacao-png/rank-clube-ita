@@ -4,7 +4,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Plus, Trash2, User, Users, Settings, Shield, Mountain, Gem, BookOpen, Star, type LucideIcon, FilePlus2, GripVertical, Edit } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, User, Users, Settings, Shield, Mountain, Gem, BookOpen, Star, type LucideIcon, FilePlus2, GripVertical, Edit, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
@@ -15,11 +15,13 @@ import type { Unit, Member, ScoreInfo, ScoringCriterion } from '@/lib/types';
 import AddMemberForm from '@/components/add-member-form';
 import EditMemberForm from '@/components/edit-member-form';
 import GenerateScoreForm from '@/components/generate-score-form';
+import ScoreReportCard from '@/components/score-report-card';
 import { useToast } from "@/hooks/use-toast"
 import { Skeleton } from '@/components/ui/skeleton';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 const iconMap: { [key: string]: LucideIcon } = {
   Shield,
@@ -44,6 +46,7 @@ export default function UnitPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [background, setBackground] = useState({ type: 'color', value: '#111827' }); // dark gray default
   const [scoringCriteria, setScoringCriteria] = useState<ScoringCriterion[]>([]);
+  const [scoreHistory, setScoreHistory] = useState<ScoreInfo[]>([]);
 
   const initialUnit = useMemo(() => initialUnits.find((u) => u.id === unitId), [unitId]);
 
@@ -133,6 +136,7 @@ export default function UnitPage() {
         return member;
       });
     });
+    setScoreHistory(prevHistory => [scoreInfo, ...prevHistory]);
     setGenerateScoreDialogOpen(false);
     toast({
       title: "Pontuações atualizadas!",
@@ -372,6 +376,16 @@ export default function UnitPage() {
                     </DialogContent>
                 </Dialog>
             </div>
+             {scoreHistory.length > 0 && (
+              <div className="mt-12">
+                <h2 className="text-2xl font-bold mb-4 text-center">Histórico de Pontuações</h2>
+                <div className="space-y-6">
+                  {scoreHistory.map((report) => (
+                      <ScoreReportCard key={report.id} report={report} members={members} scoringCriteria={scoringCriteria} />
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         ) : (
           <div className="text-center py-16 border-2 border-dashed rounded-lg flex flex-col items-center justify-center bg-card/50">
@@ -399,5 +413,3 @@ export default function UnitPage() {
     </main>
   );
 }
-
-    

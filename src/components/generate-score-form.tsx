@@ -79,7 +79,7 @@ export default function GenerateScoreForm({ members, scoringCriteria, onScoresCa
         memberScores[memberId] = { ...scoreDetails, points: totalPoints };
     }
 
-    onScoresCalculated({ date: values.date, memberScores });
+    onScoresCalculated({ id: new Date().getTime().toString(), date: values.date, memberScores });
     form.reset(defaultValues);
   }
 

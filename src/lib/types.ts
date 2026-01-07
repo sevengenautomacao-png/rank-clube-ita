@@ -29,6 +29,7 @@ export type MemberScore = {
 }
 
 export type ScoreInfo = {
+  id: string;
   date: Date;
   memberScores: {
     [memberId: string]: MemberScore;
