@@ -178,7 +178,7 @@ export default function AdminPage() {
                                                 <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
                                                 <AlertDialogDescription>
                                                     Essa ação não pode ser desfeita. Isso irá excluir permanentemente a unidade "{unit.name}".
-                                                </D_escription>
+                                                </AlertDialogDescription>
                                             </AlertDialogHeader>
                                             <AlertDialogFooter>
                                                 <AlertDialogCancel>Cancelar</AlertDialogCancel>
