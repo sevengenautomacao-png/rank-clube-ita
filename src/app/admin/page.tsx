@@ -5,7 +5,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Plus, Trash2, Edit, LogOut } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Edit, LogOut, Eye, EyeOff } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -33,12 +33,13 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking, setDocumentNonBlocking, useAuth } from '@/firebase';
-import { collection, query, doc } from 'firebase/firestore';
+import { collection, query, doc, setPersistence, browserLocalPersistence, browserSessionPersistence } from 'firebase/firestore';
 import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { Skeleton } from '@/components/ui/skeleton';
 import { defaultScoringCriteria } from '@/lib/data';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 
 const formSchema = z.object({
   name: z.string().min(2, { message: 'O nome deve ter pelo menos 2 caracteres.' }),
@@ -48,6 +49,7 @@ const formSchema = z.object({
 const loginFormSchema = z.object({
   email: z.string().email({ message: "Por favor, insira um email válido." }),
   password: z.string().min(6, { message: "A senha deve ter pelo menos 6 caracteres." }),
+  rememberMe: z.boolean().default(false),
 });
 
 export default function AdminPage() {
@@ -58,6 +60,7 @@ export default function AdminPage() {
   const [editingUnit, setEditingUnit] = useState<Unit | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isAuthLoading, setIsAuthLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const unitsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -79,6 +82,7 @@ export default function AdminPage() {
     defaultValues: {
       email: "",
       password: "",
+      rememberMe: false,
     },
   });
 
@@ -86,6 +90,10 @@ export default function AdminPage() {
     if (!auth) return;
     setIsAuthLoading(true);
     try {
+      const persistence = values.rememberMe ? browserLocalPersistence : browserSessionPersistence;
+      // This function from 'firebase/auth' is what you need
+      await import('firebase/auth').then(({ setPersistence }) => setPersistence(auth, persistence));
+
       await signInWithEmailAndPassword(auth, values.email, values.password);
       setIsAuthenticated(true);
       toast({ title: "Acesso concedido!" });
@@ -207,9 +215,44 @@ export default function AdminPage() {
                               <FormItem>
                                 <FormLabel>Senha</FormLabel>
                                 <FormControl>
-                                  <Input type="password" placeholder="********" {...field} />
+                                  <div className="relative">
+                                    <Input 
+                                      type={showPassword ? 'text' : 'password'} 
+                                      placeholder="********" 
+                                      {...field} 
+                                    />
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="icon"
+                                      className="absolute inset-y-0 right-0 h-full px-3"
+                                      onClick={() => setShowPassword(!showPassword)}
+                                    >
+                                      {showPassword ? <EyeOff /> : <Eye />}
+                                      <span className="sr-only">{showPassword ? 'Ocultar senha' : 'Mostrar senha'}</span>
+                                    </Button>
+                                  </div>
                                 </FormControl>
                                 <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                           <FormField
+                            control={loginForm.control}
+                            name="rememberMe"
+                            render={({ field }) => (
+                              <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                                <FormControl>
+                                  <Checkbox
+                                    checked={field.value}
+                                    onCheckedChange={field.onChange}
+                                  />
+                                </FormControl>
+                                <div className="space-y-1 leading-none">
+                                  <FormLabel>
+                                    Mantenha-me conectado
+                                  </FormLabel>
+                                </div>
                               </FormItem>
                             )}
                           />
