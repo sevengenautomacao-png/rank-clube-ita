@@ -1,0 +1,115 @@
+{
+  "entities": {
+    "Unit": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Unit",
+      "type": "object",
+      "description": "Represents a Pathfinder unit.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Unit entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the Pathfinder unit (e.g., Monte Hope)."
+        }
+      },
+      "required": [
+        "id",
+        "name"
+      ]
+    },
+    "Member": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Member",
+      "type": "object",
+      "description": "Represents a member of a Pathfinder unit.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Member entity."
+        },
+        "unitId": {
+          "type": "string",
+          "description": "Reference to Unit. (Relationship: Unit 1:N Member)"
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the member."
+        },
+        "age": {
+          "type": "number",
+          "description": "Age of the member."
+        },
+        "function": {
+          "type": "string",
+          "description": "Function or cargo of the member within the unit."
+        },
+        "memberClass": {
+          "type": "string",
+          "description": "Class of the member."
+        },
+        "ranking": {
+          "type": "number",
+          "description": "The member's ranking within the unit"
+        }
+      },
+      "required": [
+        "id",
+        "unitId",
+        "name",
+        "age",
+        "function",
+        "memberClass"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/units/{unitId}",
+        "definition": {
+          "entityName": "Unit",
+          "schema": {
+            "$ref": "#/backend/entities/Unit"
+          },
+          "description": "Collection of Pathfinder units. Each document represents a unit and its associated data.",
+          "params": [
+            {
+              "name": "unitId",
+              "description": "The unique identifier for the unit."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/units/{unitId}/members/{memberId}",
+        "definition": {
+          "entityName": "Member",
+          "schema": {
+            "$ref": "#/backend/entities/Member"
+          },
+          "description": "Subcollection of members within a specific unit. This structure enables efficient querying of members within a unit. Includes denormalized 'unitId' for authorization independence.",
+          "params": [
+            {
+              "name": "unitId",
+              "description": "The unique identifier for the unit."
+            },
+            {
+              "name": "memberId",
+              "description": "The unique identifier for the member."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed to securely manage Pathfinder units and their members, prioritizing authorization independence and clear security rules.  The core structure revolves around a user-centric approach for managing units, leveraging path-based ownership.  The structure is optimized for `list` operations and avoids rule-based filtering (QAPs). Authorization Independence is achieved by avoiding any `get()` requests in the rules. Specifically, access to `/units/{unitId}/members/{memberId}` is governed by the `unitId` path parameter, meaning a user with access to the `/units/{unitId}` can `list` the members without needing to know anything about the members themselves.\n\nThe structure also separates unit-specific data into its own subcollection under each unit to achieve data isolation and efficient querying. The use of consistent naming conventions (e.g., `unitId`) ensures predictability and simplifies rule creation.\n\nThe use of path-based ownership (`/units/{unitId}/members/{memberId}`) ensures that list operations are secure without overly complex rules. The structure avoids placing data requiring different access control into the same collection, further simplifying security rule design."
+  }
+}

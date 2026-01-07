@@ -1,0 +1,109 @@
+/**
+ * This ruleset enforces a security model for a Pathfinder unit management application.
+ *
+ * Core Philosophy:
+ * The security model is designed to be secure by default, establishing a foundation for an
+ * owner-based system. It currently allows public, read-only access to all unit and member
+ * data, which is suitable for a public catalog. However, all write operations (create, update,
+ * delete) are explicitly disabled because the data models lack the necessary ownership fields
+ * (`ownerId` or `creatorId`) to securely authorize these actions.
+ *
+ * Data Structure:
+ * - /units/{unitId}: A top-level collection containing all Pathfinder units.
+ * - /units/{unitId}/members/{memberId}: A subcollection containing the members of a specific unit.
+ *
+ * Key Security Decisions:
+ * - Public Read Access: All data in the `/units` collection and its `/members` subcollections
+ *   is publicly readable by anyone, including unauthenticated users. This is a common pattern for
+ *   directory-style information.
+ * - Writes Disabled by Default: All write operations are currently disallowed (`if false;`). This is a
+ *   critical security measure to prevent unauthorized data modification until the application schema
+ *   is updated.
+ * - Actionable TODOs for Developers: Placeholder rules and comments have been added to guide
+ *   the developer on how to enable writes securely once an ownership field (e.g., `ownerId`) is
+ *   added to the 'Unit' entity.
+ *
+ * Denormalization for Authorization:
+ * The rules are structured to depend on an `ownerId` field being present on each `Unit` document.
+ * This denormalization is essential for creating performant and secure write rules without needing
+ * costly `get` or `exists` calls to other collections. The current ruleset highlights where this
+ * denormalization is missing. The `Member` entity correctly includes a `unitId` to link it back
+ * to its parent unit, which is used for relational integrity checks.
+ *
+ * Structural Segregation:
+ * The data is well-structured, with members nested under their respective units. This segregation
+ * simplifies security rules and makes queries for all members of a specific unit efficient and secure.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * @description
+     *   Rules for the 'units' collection. Documents in this collection represent a single
+     *   Pathfinder unit. Read access is public. Writes are disabled pending schema updates.
+     * @path /units/{unitId}
+     * @allow (get) Any user, signed in or not, can read a specific unit's data.
+     * @deny (create) Any user attempting to create a new unit document. This is disallowed
+     *   until an ownership model is implemented in the schema.
+     * @principle Public Read with Owner-Only Writes (currently writes are disabled). This
+     *   allows for public discoverability while preparing for a secure ownership model.
+     */
+    match /units/{unitId} {
+      allow get: if true;
+      allow list: if true;
+
+      // CRITICAL: The 'Unit' entity is missing an 'ownerId' or 'authorId' field.
+      // Write operations are disabled to prevent unauthorized data creation.
+      // TODO: Add an 'ownerId' field to the 'Unit' schema to enable secure creation.
+      // The rule should be updated to:
+      // allow create: if isSignedIn() && request.resource.data.ownerId == request.auth.uid && request.resource.data.id == unitId;
+      allow create: if false;
+
+      // CRITICAL: The 'Unit' entity is missing an 'ownerId' to verify ownership for updates.
+      // TODO: Add an 'ownerId' field and update the rule to:
+      // allow update: if isSignedIn() && resource.data.ownerId == request.auth.uid && request.resource.data.id == resource.data.id;
+      allow update: if false;
+
+      // CRITICAL: The 'Unit' entity is missing an 'ownerId' to verify ownership for deletes.
+      // TODO: Add an 'ownerId' field and update the rule to:
+      // allow delete: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow delete: if false;
+
+      /**
+       * @description
+       *   Rules for the 'members' subcollection within a unit. Members are publicly readable.
+       *   Writes are disabled because authorization depends on the ownership of the parent unit,
+       *   which cannot currently be determined.
+       * @path /units/{unitId}/members/{memberId}
+       * @allow (get) Any user can read the data of a member within any unit.
+       * @deny (create) Any user attempting to add a member to a unit.
+       * @principle Subcollection access inherits the security posture of its parent document.
+       *   Validates relational integrity between the member and its parent unit.
+       */
+      match /members/{memberId} {
+        allow get: if true;
+        allow list: if true;
+
+        // CRITICAL: Cannot determine who owns the parent unit to allow member creation.
+        // TODO: Add an 'ownerId' field to the parent 'Unit' document.
+        // The rule should be updated to check for parent ownership, for example:
+        // allow create: if isSignedIn() && get(/databases/$(database)/documents/units/$(unitId)).data.ownerId == request.auth.uid
+        //   && request.resource.data.unitId == unitId && request.resource.data.id == memberId;
+        allow create: if false;
+
+        // CRITICAL: Cannot determine who owns the parent unit to allow member updates.
+        // TODO: Add 'ownerId' to the parent 'Unit' and update the rule to check ownership.
+        // The rule should also enforce immutability of key relational IDs. For example:
+        // allow update: if isSignedIn() && get(/databases/$(database)/documents/units/$(unitId)).data.ownerId == request.auth.uid
+        //   && request.resource.data.unitId == resource.data.unitId && request.resource.data.id == resource.data.id;
+        allow update: if false;
+
+        // CRITICAL: Cannot determine who owns the parent unit to allow member deletion.
+        // TODO: Add 'ownerId' to the parent 'Unit' and update the rule to check ownership.
+        // allow delete: if isSignedIn() && get(/databases/$(database)/documents/units/$(unitId)).data.ownerId == request.auth.uid;
+        allow delete: if false;
+      }
+    }
+  }
+}
