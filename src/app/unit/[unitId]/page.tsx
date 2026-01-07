@@ -4,7 +4,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Plus, Trash2, User, Users, Settings, Shield, Mountain, Gem, BookOpen, Star, type LucideIcon, FilePlus2, GripVertical } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, User, Users, Settings, Shield, Mountain, Gem, BookOpen, Star, type LucideIcon, FilePlus2, GripVertical, Edit } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
@@ -13,6 +13,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { initialUnits } from '@/lib/data';
 import type { Unit, Member, ScoreInfo, ScoringCriterion } from '@/lib/types';
 import AddMemberForm from '@/components/add-member-form';
+import EditMemberForm from '@/components/edit-member-form';
 import GenerateScoreForm from '@/components/generate-score-form';
 import { useToast } from "@/hooks/use-toast"
 import { Skeleton } from '@/components/ui/skeleton';
@@ -37,6 +38,7 @@ export default function UnitPage() {
   const [unit, setUnit] = useState<Unit | null>(null);
   const [members, setMembers] = useState<Member[]>([]);
   const [isAddMemberSheetOpen, setAddMemberSheetOpen] = useState(false);
+  const [editingMember, setEditingMember] = useState<Member | null>(null);
   const [isSettingsSheetOpen, setSettingsSheetOpen] = useState(false);
   const [isGenerateScoreDialogOpen, setGenerateScoreDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -82,7 +84,7 @@ export default function UnitPage() {
     }
   }, [initialUnit, router]);
 
-  const handleAddMember = (newMemberData: Omit<Member, 'id'>) => {
+  const handleAddMember = (newMemberData: Omit<Member, 'id' | 'score'>) => {
     const newMember: Member = {
       ...newMemberData,
       id: new Date().getTime().toString(), // simple unique id
@@ -95,10 +97,20 @@ export default function UnitPage() {
       description: `${newMember.name} foi adicionado à unidade.`,
     })
   };
+  
+  const handleUpdateMember = (updatedMemberData: Member) => {
+    setMembers(prevMembers => prevMembers.map(member => member.id === updatedMemberData.id ? updatedMemberData : member));
+    setEditingMember(null);
+    toast({
+      title: "Membro atualizado!",
+      description: `As informações de ${updatedMemberData.name} foram atualizadas.`,
+    });
+  };
 
   const handleDeleteMember = (memberId: string) => {
     const memberName = members.find(m => m.id === memberId)?.name;
     setMembers(prevMembers => prevMembers.filter(m => m.id !== memberId));
+    setEditingMember(null);
     toast({
       title: "Membro removido.",
       description: `O membro ${memberName} foi removido da unidade.`,
@@ -336,27 +348,10 @@ export default function UnitPage() {
                     )}
                   </CardContent>
                   <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity focus-within:opacity-100">
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="destructive" size="icon" aria-label={`Remover ${member.name}`}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Essa ação não pode ser desfeita. Isso irá remover permanentemente o membro {member.name} da unidade.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => handleDeleteMember(member.id)}>
-                            Remover
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
+                    <Button variant="outline" size="icon" onClick={() => setEditingMember(member)}>
+                      <Edit className="h-4 w-4" />
+                       <span className="sr-only">Editar {member.name}</span>
+                    </Button>
                   </div>
                 </Card>
               ))}
@@ -386,6 +381,21 @@ export default function UnitPage() {
           </div>
         )}
       </div>
+      
+      <Sheet open={!!editingMember} onOpenChange={(isOpen) => !isOpen && setEditingMember(null)}>
+        <SheetContent side="right">
+          <SheetHeader>
+            <SheetTitle>Editar Membro</SheetTitle>
+          </SheetHeader>
+          {editingMember && (
+            <EditMemberForm
+              member={editingMember}
+              onMemberUpdate={handleUpdateMember}
+              onMemberDelete={() => handleDeleteMember(editingMember.id)}
+            />
+          )}
+        </SheetContent>
+      </Sheet>
     </main>
   );
 }

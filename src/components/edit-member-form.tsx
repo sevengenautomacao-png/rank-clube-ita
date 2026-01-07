@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import type { Member } from "@/lib/types";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Trash2 } from "lucide-react";
 
 const formSchema = z.object({
   name: z.string().min(2, { message: "O nome deve ter pelo menos 2 caracteres." }),
@@ -15,24 +17,25 @@ const formSchema = z.object({
   className: z.string().min(2, { message: "A classe deve ter pelo menos 2 caracteres." }),
 });
 
-type AddMemberFormProps = {
-  onMemberAdd: (member: Omit<Member, 'id' | 'score'>) => void;
+type EditMemberFormProps = {
+  member: Member;
+  onMemberUpdate: (member: Member) => void;
+  onMemberDelete: () => void;
 };
 
-export default function AddMemberForm({ onMemberAdd }: AddMemberFormProps) {
+export default function EditMemberForm({ member, onMemberUpdate, onMemberDelete }: EditMemberFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: "",
-      age: undefined,
-      role: "",
-      className: "",
+      name: member.name,
+      age: member.age,
+      role: member.role,
+      className: member.className,
     },
   });
 
   function onSubmit(values: z.infer<typeof formSchema>) {
-    onMemberAdd(values);
-    form.reset();
+    onMemberUpdate({ ...member, ...values });
   }
 
   return (
@@ -90,9 +93,33 @@ export default function AddMemberForm({ onMemberAdd }: AddMemberFormProps) {
             </FormItem>
           )}
         />
-        <Button type="submit" className="w-full">
-          Salvar Membro
-        </Button>
+        <div className="flex flex-col space-y-2">
+            <Button type="submit" className="w-full">
+                Salvar Alterações
+            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" className="w-full">
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Excluir Membro
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Essa ação não pode ser desfeita. Isso irá remover permanentemente o membro {member.name} da unidade.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction onClick={onMemberDelete}>
+                    Excluir
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+        </div>
       </form>
     </Form>
   );
