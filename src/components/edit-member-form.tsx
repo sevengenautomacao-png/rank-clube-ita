@@ -61,7 +61,7 @@ export default function EditMemberForm({ member, onMemberUpdate, onMemberDelete 
             <FormItem>
               <FormLabel>Idade</FormLabel>
               <FormControl>
-                <Input type="number" placeholder="12" {...field} onChange={e => field.onChange(e.target.valueAsNumber)} />
+                <Input type="number" placeholder="12" {...field} value={field.value ?? ''} />
               </FormControl>
               <FormMessage />
             </FormItem>

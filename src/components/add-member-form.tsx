@@ -24,7 +24,7 @@ export default function AddMemberForm({ onMemberAdd }: AddMemberFormProps) {
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
-      age: undefined,
+      age: '' as any,
       role: "",
       className: "",
     },
@@ -58,7 +58,7 @@ export default function AddMemberForm({ onMemberAdd }: AddMemberFormProps) {
             <FormItem>
               <FormLabel>Idade</FormLabel>
               <FormControl>
-                <Input type="number" placeholder="12" {...field} onChange={e => field.onChange(e.target.valueAsNumber)} />
+                <Input type="number" placeholder="12" {...field} value={field.value ?? ''} />
               </FormControl>
               <FormMessage />
             </FormItem>
