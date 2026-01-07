@@ -21,6 +21,7 @@ export type MemberScore = {
   uniform: boolean;
   bible: boolean;
   lesson: boolean;
+  lenco: boolean;
   points: number;
 }
 
@@ -30,5 +31,3 @@ export type ScoreInfo = {
     [memberId: string]: MemberScore;
   }
 }
-
-    

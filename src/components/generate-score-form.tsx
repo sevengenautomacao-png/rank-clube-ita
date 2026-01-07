@@ -27,6 +27,7 @@ const formSchema = z.object({
     uniform: z.boolean().default(false),
     bible: z.boolean().default(false),
     lesson: z.boolean().default(false),
+    lenco: z.boolean().default(false),
   })),
 });
 
@@ -40,13 +41,14 @@ const pointValues = {
   uniform: 3,
   bible: 1,
   lesson: 1,
+  lenco: 1,
 };
 
 export default function GenerateScoreForm({ members, onScoresCalculated }: GenerateScoreFormProps) {
   const defaultValues = {
     date: new Date(),
     members: members.reduce((acc, member) => {
-      acc[member.id] = { present: true, uniform: false, bible: false, lesson: false };
+      acc[member.id] = { present: true, uniform: false, bible: false, lesson: false, lenco: false };
       return acc;
     }, {} as z.infer<typeof formSchema>['members']),
   };
@@ -66,6 +68,7 @@ export default function GenerateScoreForm({ members, onScoresCalculated }: Gener
         if (memberData.uniform) points += pointValues.uniform;
         if (memberData.bible) points += pointValues.bible;
         if (memberData.lesson) points += pointValues.lesson;
+        if (memberData.lenco) points += pointValues.lenco;
 
         memberScores[memberId] = { ...memberData, points };
     }
@@ -139,7 +142,7 @@ export default function GenerateScoreForm({ members, onScoresCalculated }: Gener
                             <CardTitle className="text-lg">{member.name}</CardTitle>
                         </div>
                     </CardHeader>
-                    <CardContent className="p-4 pt-0 grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    <CardContent className="p-4 pt-0 grid grid-cols-2 sm:grid-cols-5 gap-4">
                        <FormField
                           control={form.control}
                           name={`members.${member.id}.present`}
@@ -188,6 +191,18 @@ export default function GenerateScoreForm({ members, onScoresCalculated }: Gener
                             </FormItem>
                           )}
                         />
+                        <FormField
+                          control={form.control}
+                          name={`members.${member.id}.lenco`}
+                          render={({ field }) => (
+                            <FormItem className="flex items-center space-x-2 space-y-0">
+                                <FormControl>
+                                    <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                                </FormControl>
+                                <FormLabel className="font-normal">Lenço</FormLabel>
+                            </FormItem>
+                          )}
+                        />
                     </CardContent>
                  </Card>
               </FormItem>
@@ -203,5 +218,3 @@ export default function GenerateScoreForm({ members, onScoresCalculated }: Gener
     </Form>
   );
 }
-
-    
