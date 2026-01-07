@@ -172,7 +172,7 @@ export default function AdminPage() {
                       <FormItem>
                         <FormLabel>Senha de Acesso (Opcional)</FormLabel>
                         <FormControl>
-                          <Input type="password" placeholder="Senha para a unidade" {...field} value={field.value ?? ''}/>
+                          <Input type="text" placeholder="Senha para a unidade" {...field} value={field.value ?? ''}/>
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -296,7 +296,7 @@ function EditUnitForm({ unit, onUpdate }: { unit: Unit, onUpdate: (values: Parti
                 <FormItem>
                 <FormLabel>Senha de Acesso</FormLabel>
                 <FormControl>
-                    <Input type="password" {...field} value={field.value ?? ''} />
+                    <Input type="text" {...field} value={field.value ?? ''} />
                 </FormControl>
                 <FormMessage />
                 </FormItem>
