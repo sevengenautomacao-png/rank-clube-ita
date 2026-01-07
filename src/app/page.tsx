@@ -11,7 +11,7 @@ import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, query } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { Unit, Member, Rank } from '@/lib/types';
-import { getRankForScore, ranks as defaultRanks } from '@/lib/ranks';
+import { getRankForScore, getRanks } from '@/lib/ranks';
 
 
 const iconMap: { [key: string]: LucideIcon } = {
@@ -36,13 +36,13 @@ export default function Home() {
     if (!units) return [];
     
     const allMembers: (Member & { avatarFallback?: string, patent?: Rank })[] = units.flatMap(unit => {
-        const customRanks = unit.ranks && unit.ranks.length > 0 ? unit.ranks : defaultRanks;
+        const customRanks = getRanks(unit.ranks);
         return (unit.members || []).map(member => ({ 
             ...member, 
             unitName: unit.name,
             unitId: unit.id,
             avatarFallback: member.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase(),
-            patent: getRankForScore(member.score || 0, customRanks)
+            patent: getRankForScore(member.score || 0, unit.ranks)
         }))
     });
 

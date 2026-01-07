@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import type { Unit, Rank } from '@/lib/types';
+import type { Unit, Rank, RankData } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   AlertDialog,
@@ -37,7 +37,7 @@ import { collection, query, doc } from 'firebase/firestore';
 import { signInWithEmailAndPassword, signOut, setPersistence, browserLocalPersistence, browserSessionPersistence } from 'firebase/auth';
 import { Skeleton } from '@/components/ui/skeleton';
 import { defaultScoringCriteria } from '@/lib/data';
-import { ranks as defaultRanks } from '@/lib/ranks';
+import { ranks as defaultRanks, getRanks } from '@/lib/ranks';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -63,7 +63,7 @@ export default function AdminPage() {
   const [isAuthLoading, setIsAuthLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   
-  const [customRanks, setCustomRanks] = useState<Rank[]>(defaultRanks);
+  const [customRanks, setCustomRanks] = useState<Rank[]>(getRanks());
 
   const unitsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -71,6 +71,16 @@ export default function AdminPage() {
   }, [firestore]);
 
   const { data: units, isLoading } = useCollection<Unit>(unitsQuery);
+
+  useEffect(() => {
+    // If units are loaded, derive the ranks from the first unit that has them
+    if (units && units.length > 0) {
+        const unitWithRanks = units.find(u => u.ranks && u.ranks.length > 0);
+        if (unitWithRanks) {
+            setCustomRanks(getRanks(unitWithRanks.ranks));
+        }
+    }
+  }, [units]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -134,7 +144,7 @@ export default function AdminPage() {
       members: [],
       icon: 'Shield', // Default icon
       scoringCriteria: defaultScoringCriteria,
-      ranks: defaultRanks
+      ranks: defaultRanks.map(({Icon, ...data}) => data)
     };
 
     addDocumentNonBlocking(collection(firestore, 'units'), { ...newUnit, id: unitId });
@@ -180,11 +190,11 @@ export default function AdminPage() {
   async function handleSaveRanks() {
     if (!firestore || !units) return;
 
-    // This will update all units with the new ranks.
-    // A better approach for a larger app would be a shared 'config' document.
+    const ranksToSave: RankData[] = customRanks.map(({ Icon, ...data }) => data);
+
     const batch = units.map(unit => {
         const unitRef = doc(firestore, 'units', unit.id);
-        return setDocumentNonBlocking(unitRef, { ranks: customRanks }, { merge: true });
+        return setDocumentNonBlocking(unitRef, { ranks: ranksToSave }, { merge: true });
     });
     
     await Promise.all(batch);

@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import type { Unit, Member, ScoreInfo, ScoringCriterion } from '@/lib/types';
+import type { Unit, Member, ScoreInfo, ScoringCriterion, Rank } from '@/lib/types';
 import AddMemberForm from '@/components/add-member-form';
 import EditMemberForm from '@/components/edit-member-form';
 import GenerateScoreForm from '@/components/generate-score-form';
@@ -23,7 +23,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useDoc, useFirestore, useMemoFirebase, setDocumentNonBlocking } from '@/firebase';
 import { doc } from 'firebase/firestore';
-import { getRankForScore, Rank, ranks as defaultRanks } from '@/lib/ranks';
+import { getRankForScore, getRanks } from '@/lib/ranks';
 
 
 const iconMap: { [key: string]: LucideIcon } = {
@@ -64,7 +64,7 @@ export default function UnitPage() {
   const [localUnitIcon, setLocalUnitIcon] = useState("Shield");
   const [localUnitPassword, setLocalUnitPassword] = useState("");
 
-  const customRanks = useMemo(() => (unit?.ranks && unit.ranks.length > 0 ? unit.ranks : defaultRanks), [unit]);
+  const customRanks = useMemo(() => getRanks(unit?.ranks), [unit]);
 
   useEffect(() => {
     if (unit) {
@@ -74,7 +74,7 @@ export default function UnitPage() {
       setMembers(unit.members?.map(m => ({ 
         ...m, 
         score: m.score ?? 0,
-        patent: getRankForScore(m.score ?? 0, customRanks),
+        patent: getRankForScore(m.score ?? 0, unit.ranks),
       })) || []);
       setScoringCriteria(unit.scoringCriteria || []);
       const history = (unit.scoreHistory || []).map(sh => {
@@ -93,7 +93,7 @@ export default function UnitPage() {
         setBackground({ type: 'color', value: '' });
       }
     }
-  }, [unit, customRanks]);
+  }, [unit]);
 
   const handlePasswordSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -129,7 +129,7 @@ export default function UnitPage() {
   const updateMembersWithRank = (membersToUpdate: Member[]): (Member & { patent: Rank })[] => {
     return membersToUpdate.map(m => ({
       ...m,
-      patent: getRankForScore(m.score ?? 0, customRanks)
+      patent: getRankForScore(m.score ?? 0, unit?.ranks)
     }));
   };
 

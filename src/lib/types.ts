@@ -1,4 +1,14 @@
-import type { Rank } from './ranks';
+import type { LucideIcon } from 'lucide-react';
+
+export type RankData = {
+  score: number;
+  name: string;
+  iconUrl?: string;
+}
+
+export type Rank = RankData & {
+  Icon: LucideIcon;
+};
 
 export type ScoringCriterion = {
   id: string;
@@ -30,13 +40,13 @@ export type Unit = {
   icon: string;
   scoringCriteria: ScoringCriterion[];
   scoreHistory?: ScoreInfo[];
-  ranks?: Rank[];
+  ranks?: RankData[];
 };
 
 export type MemberScore = {
   points: number;
   observation?: string;
-  [criterionId: string]: boolean | number | string;
+  [criterionId: string]: boolean | number | string | undefined;
 }
 
 export type ScoreInfo = {

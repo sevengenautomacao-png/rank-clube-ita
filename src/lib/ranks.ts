@@ -1,11 +1,6 @@
 import { Shield, Radio, Badge, Star, ShieldHalf, ShieldCheck, ShieldAlert, Award, Gem, Crown, Diamond, Rocket, Swords, type LucideIcon } from 'lucide-react';
+import type { Rank, RankData } from './types';
 
-export type Rank = {
-    score: number;
-    name: string;
-    Icon: LucideIcon;
-    iconUrl?: string;
-};
 
 export const ranks: Rank[] = [
     { score: 0, name: 'Recruta', Icon: Shield },
@@ -19,14 +14,32 @@ export const ranks: Rank[] = [
     { score: 80, name: '2º Tenente', Icon: Gem },
     { score: 90, name: '1º Tenente', Icon: Crown },
     { score: 100, name: 'Capitão', Icon: Shield },
-    { score: 110, name: 'Major', Icon: Diamond },
-    { score: 120, name: 'Tenente-Coronel', Icon: Rocket },
-    { score: 130, name: 'Coronel', Icon: Swords },
-    { score: 150, name: 'Marechal', Icon: Star }, // Placeholder, can be changed
+    { score: 120, name: 'Major', Icon: Diamond },
+    { score: 140, name: 'Tenente-Coronel', Icon: Rocket },
+    { score: 160, name: 'Coronel', Icon: Swords },
+    { score: 200, name: 'Marechal', Icon: Star },
 ];
 
-export function getRankForScore(score: number, customRanks: Rank[] = ranks): Rank {
-    const rankList = customRanks.length > 0 ? customRanks : ranks;
+function combineRanks(customRanks: RankData[]): Rank[] {
+    return ranks.map(defaultRank => {
+        const customRank = customRanks.find(cr => cr.name === defaultRank.name);
+        return {
+            ...defaultRank,
+            ...customRank,
+        };
+    });
+}
+
+export function getRanks(customRanks?: RankData[]): Rank[] {
+    if (customRanks && customRanks.length > 0) {
+        return combineRanks(customRanks);
+    }
+    return ranks;
+}
+
+
+export function getRankForScore(score: number, customRanks?: RankData[]): Rank {
+    const rankList = getRanks(customRanks);
     let currentRank = rankList[0];
     for (const rank of rankList) {
         if (score >= rank.score) {
