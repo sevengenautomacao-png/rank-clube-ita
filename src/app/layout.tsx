@@ -26,7 +26,7 @@ export default function RootLayout({
       <body>
         <ThemeProvider
           attribute="class"
-          defaultTheme="theme-dark"
+          defaultTheme="theme-retro-dark"
         >
           <FirebaseClientProvider>
             {children}
