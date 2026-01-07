@@ -14,6 +14,7 @@ import type { Unit, Member, Rank } from '@/lib/types';
 import { getRankForScore, getRanksForScore } from '@/lib/ranks';
 import { ThemeSwitcher } from '@/components/theme-switcher';
 import { useTheme } from '@/components/theme-provider';
+import { cn } from '@/lib/utils';
 
 
 const iconMap: { [key:string]: LucideIcon } = {
@@ -134,9 +135,12 @@ export default function Home() {
                 <ul className="space-y-4">
                   {top5Members.map((member, index) => {
                     const PatentIcon = member.patent?.Icon;
+                    const isRetro = fontClassName === 'font-retro';
                     return (
-                        <li key={member.id} className="flex items-center justify-between p-3 bg-card rounded-lg border hover:bg-muted/50 transition-colors">
-                        <div className="flex items-center gap-4">
+                        <li key={member.id} className={cn("p-3 bg-card rounded-lg border hover:bg-muted/50 transition-colors flex", 
+                           isRetro ? 'flex-col items-center gap-4' : 'items-center justify-between'
+                        )}>
+                        <div className="flex items-center gap-4 w-full">
                             <span className="text-lg font-bold w-6 text-center">{index + 1}</span>
                             <Avatar>
                                 {member.avatarUrl ? (
