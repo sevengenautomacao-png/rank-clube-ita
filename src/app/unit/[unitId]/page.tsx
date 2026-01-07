@@ -599,7 +599,7 @@ export default function UnitPage() {
                         {member.patent && (
                         <div className="flex items-center pt-2 gap-2">
                             {member.patent.iconUrl ? (
-                                <Image src={member.patent.iconUrl} alt={member.patent.name} width={20} height={20} className="object-contain" />
+                                <img src={member.patent.iconUrl} alt={member.patent.name} className="h-5 w-5 object-contain" />
                             ) : PatentIcon ? (
                                 <PatentIcon className="h-5 w-5 text-primary" />
                             ) : null}

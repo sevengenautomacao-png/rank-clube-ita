@@ -81,7 +81,7 @@ export default function Home() {
                     className="aspect-square flex flex-col justify-end p-4 hover:border-primary border-2 border-transparent transition-colors duration-300 relative overflow-hidden"
                     style={{ backgroundColor: unit.cardColor && !unit.cardImageUrl ? unit.cardColor : undefined }}
                 >
-                  {unit.cardImageUrl && (
+                  {unit.cardImageUrl ? (
                     <Image
                       src={unit.cardImageUrl}
                       alt={unit.name}
@@ -89,6 +89,8 @@ export default function Home() {
                       className="object-cover z-0"
                       data-ai-hint="nature landscape"
                     />
+                  ) : (
+                    <div className="absolute inset-0 z-0" style={{backgroundColor: unit.cardColor || 'transparent'}}></div>
                   )}
                   <div className="relative z-10 bg-black/50 p-4 rounded-lg mt-auto">
                     <CardHeader className="flex flex-row items-center justify-between text-left pb-2 p-0">
@@ -136,7 +138,7 @@ export default function Home() {
                             {member.patent && (
                                 <p className="text-sm text-muted-foreground flex items-center gap-1">
                                     {member.patent.iconUrl ? (
-                                      <Image src={member.patent.iconUrl} alt={member.patent.name} width={16} height={16} className="object-contain" />
+                                      <img src={member.patent.iconUrl} alt={member.patent.name} className="h-4 w-4 object-contain" />
                                     ) : PatentIcon ? (
                                       <PatentIcon className="h-4 w-4" />
                                     ) : null}
