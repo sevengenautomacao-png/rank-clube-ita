@@ -482,7 +482,7 @@ export default function UnitPage() {
                         />
                     </div>
                     <div>
-                        <Label htmlFor="bg-color">Cor de Fundo</Label>
+                        <Label htmlFor="bg-color">Cor de Fundo do Card</Label>
                         <Input 
                             id="bg-color"
                             type="color" 
@@ -492,7 +492,7 @@ export default function UnitPage() {
                         />
                     </div>
                     <div>
-                        <Label htmlFor="bg-image">URL da Imagem de Fundo</Label>
+                        <Label htmlFor="bg-image">URL da Imagem de Fundo do Card</Label>
                         <Input 
                             id="bg-image"
                             type="text" 
@@ -500,6 +500,7 @@ export default function UnitPage() {
                             value={background.type === 'image' ? background.value : ''}
                             onChange={(e) => setBackground({type: 'image', value: e.target.value})}
                         />
+                         <p className="text-xs text-muted-foreground mt-1">Deixe em branco para usar a cor de fundo.</p>
                     </div>
                     <div className="space-y-4">
                       <Label>Itens de Pontuação</Label>
@@ -655,5 +656,3 @@ export default function UnitPage() {
     </main>
   );
 }
-
-    
