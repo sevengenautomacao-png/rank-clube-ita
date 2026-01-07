@@ -3,66 +3,95 @@
 @tailwind utilities;
 
 @layer base {
-  :root {
+  .theme-light {
     --background: 0 0% 100%;
     --foreground: 240 10% 3.9%;
-
     --card: 0 0% 100%;
     --card-foreground: 240 10% 3.9%;
-
     --popover: 0 0% 100%;
     --popover-foreground: 240 10% 3.9%;
-
     --primary: 240 5.9% 10%;
     --primary-foreground: 0 0% 98%;
-
     --secondary: 240 4.8% 95.9%;
     --secondary-foreground: 240 5.9% 10%;
-
     --muted: 240 4.8% 95.9%;
     --muted-foreground: 240 5% 45.1%;
-
     --accent: 240 4.8% 95.9%;
     --accent-foreground: 240 5.9% 10%;
-
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-
     --border: 240 5.9% 90%;
     --input: 240 5.9% 90%;
     --ring: 240 10% 3.9%;
-
     --radius: 0.5rem;
   }
 
-  .dark {
+  .theme-dark {
     --background: 240 10% 3.9%;
     --foreground: 0 0% 98%;
-
     --card: 240 10% 3.9%;
     --card-foreground: 0 0% 98%;
-
     --popover: 240 10% 3.9%;
     --popover-foreground: 0 0% 98%;
-
-    --primary: 0 0% 98%;
+    --primary: 244 89% 67%;
     --primary-foreground: 240 5.9% 10%;
-
     --secondary: 240 3.7% 15.9%;
     --secondary-foreground: 0 0% 98%;
-
     --muted: 240 3.7% 15.9%;
     --muted-foreground: 240 5% 64.9%;
-
-    --accent: 240 3.7% 15.9%;
+    --accent: 304 89% 67%;
     --accent-foreground: 0 0% 98%;
-
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
-
     --border: 240 3.7% 15.9%;
     --input: 240 3.7% 15.9%;
     --ring: 240 4.9% 83.9%;
+  }
+
+  .theme-retro-light {
+    --background: 55 33% 92%;
+    --foreground: 250 5% 25%;
+    --card: 55 33% 85%;
+    --card-foreground: 250 5% 25%;
+    --popover: 55 33% 85%;
+    --popover-foreground: 250 5% 25%;
+    --primary: 220 70% 50%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 240 5% 85%;
+    --secondary-foreground: 240 5% 15%;
+    --muted: 240 5% 85%;
+    --muted-foreground: 240 5% 45%;
+    --accent: 10 80% 60%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 80% 55%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 240 5% 75%;
+    --input: 240 5% 75%;
+    --ring: 220 70% 50%;
+    --radius: 0rem;
+  }
+
+  .theme-retro-dark {
+    --background: 240 10% 4%;
+    --foreground: 210 40% 98%;
+    --card: 240 5% 12%;
+    --card-foreground: 210 40% 98%;
+    --popover: 240 10% 4%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 45 100% 50%;
+    --primary-foreground: 240 10% 4%;
+    --secondary: 240 4% 16%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 240 4% 16%;
+    --muted-foreground: 240 5% 65%;
+    --accent: 160 100% 50%;
+    --accent-foreground: 240 10% 4%;
+    --destructive: 0 100% 50%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 240 4% 16%;
+    --input: 240 4% 16%;
+    --ring: 45 100% 50%;
+    --radius: 0rem;
   }
 }
 
@@ -72,5 +101,11 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+  .font-retro {
+    font-family: 'Press Start 2P', sans-serif;
+  }
+  .font-modern {
+    font-family: 'Inter', sans-serif;
   }
 }

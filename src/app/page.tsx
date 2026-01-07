@@ -12,6 +12,8 @@ import { collection, query } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { Unit, Member, Rank } from '@/lib/types';
 import { getRankForScore, getRanksForScore } from '@/lib/ranks';
+import { ThemeSwitcher } from '@/components/theme-switcher';
+import { useTheme } from '@/components/theme-provider';
 
 
 const iconMap: { [key: string]: LucideIcon } = {
@@ -24,6 +26,7 @@ const iconMap: { [key: string]: LucideIcon } = {
 
 export default function Home() {
   const firestore = useFirestore();
+  const { fontClassName } = useTheme();
 
   const unitsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -54,12 +57,13 @@ export default function Home() {
   }, [units]);
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className={`flex flex-col min-h-screen ${fontClassName}`}>
       <main className="flex-grow flex flex-col items-center p-4 sm:p-8 bg-background">
         <header className="w-full max-w-4xl flex justify-between items-center text-center mb-8 sm:mb-12">
-           <h1 className="text-2xl sm:text-4xl font-bold text-yellow-400">
+           <h1 className="text-2xl sm:text-4xl font-bold text-primary">
             Rank Clube Ita
           </h1>
+          <ThemeSwitcher />
         </header>
         <div className="w-full max-w-4xl text-center mb-8">
           <p className="text-sm text-muted-foreground mt-2">
