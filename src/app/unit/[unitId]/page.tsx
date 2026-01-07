@@ -4,14 +4,14 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Plus, Trash2, User, Users, Settings, Shield, Mountain, Gem, BookOpen, Star, type LucideIcon, FilePlus2 } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, User, Users, Settings, Shield, Mountain, Gem, BookOpen, Star, type LucideIcon, FilePlus2, GripVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { initialUnits } from '@/lib/data';
-import type { Unit, Member, ScoreInfo } from '@/lib/types';
+import type { Unit, Member, ScoreInfo, ScoringCriterion } from '@/lib/types';
 import AddMemberForm from '@/components/add-member-form';
 import GenerateScoreForm from '@/components/generate-score-form';
 import { useToast } from "@/hooks/use-toast"
@@ -41,6 +41,7 @@ export default function UnitPage() {
   const [isGenerateScoreDialogOpen, setGenerateScoreDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [background, setBackground] = useState({ type: 'color', value: '#111827' }); // dark gray default
+  const [scoringCriteria, setScoringCriteria] = useState<ScoringCriterion[]>([]);
 
   const initialUnit = useMemo(() => initialUnits.find((u) => u.id === unitId), [unitId]);
 
@@ -57,16 +58,17 @@ export default function UnitPage() {
   
   useEffect(() => {
     if (unit) {
-      const updatedUnit = { ...unit, members };
+      const updatedUnit = { ...unit, members, scoringCriteria };
       setUnit(updatedUnit);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [members]);
+  }, [members, scoringCriteria]);
 
   useEffect(() => {
     if (initialUnit) {
       setUnit(initialUnit);
       setMembers(initialUnit.members.map(m => ({...m, score: m.score ?? 0})));
+      setScoringCriteria(initialUnit.scoringCriteria);
       if (initialUnit.cardImageUrl) {
         setBackground({ type: 'image', value: initialUnit.cardImageUrl });
       } else if (initialUnit.cardColor) {
@@ -126,6 +128,26 @@ export default function UnitPage() {
     });
   }
 
+  const handleUpdateCriterion = (index: number, field: 'label' | 'points', value: string | number) => {
+    const newCriteria = [...scoringCriteria];
+    if (field === 'points' && typeof value === 'string') {
+        newCriteria[index][field] = parseInt(value, 10) || 0;
+    } else {
+        newCriteria[index][field] = value as any;
+    }
+    setScoringCriteria(newCriteria);
+  };
+
+  const handleAddCriterion = () => {
+    const newId = `custom-${new Date().getTime()}`;
+    setScoringCriteria([...scoringCriteria, { id: newId, label: 'Novo item', points: 1 }]);
+  };
+
+  const handleDeleteCriterion = (index: number) => {
+    const newCriteria = scoringCriteria.filter((_, i) => i !== index);
+    setScoringCriteria(newCriteria);
+  };
+
   const pageStyle: React.CSSProperties =
     background.type === 'image'
       ? { backgroundImage: `url(${background.value})`, backgroundSize: 'cover', backgroundPosition: 'center' }
@@ -184,11 +206,11 @@ export default function UnitPage() {
                   <Settings />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="right">
+              <SheetContent side="right" className="flex flex-col">
                 <SheetHeader>
                   <SheetTitle>Configurações da Unidade</SheetTitle>
                 </SheetHeader>
-                <div className="py-4 space-y-4">
+                <div className="py-4 space-y-4 overflow-y-auto pr-6">
                     <div>
                         <Label htmlFor="unit-name">Nome da Unidade</Label>
                         <Input
@@ -239,6 +261,35 @@ export default function UnitPage() {
                             value={background.type === 'image' ? background.value : ''}
                             onChange={(e) => setBackground({type: 'image', value: e.target.value})}
                         />
+                    </div>
+                    <div className="space-y-4">
+                      <Label>Itens de Pontuação</Label>
+                      <div className="space-y-3">
+                        {scoringCriteria.map((criterion, index) => (
+                          <div key={criterion.id} className="flex items-center gap-2 p-2 border rounded-lg bg-card/50">
+                            <GripVertical className="h-5 w-5 text-muted-foreground" />
+                            <Input
+                              type="text"
+                              value={criterion.label}
+                              onChange={(e) => handleUpdateCriterion(index, 'label', e.target.value)}
+                              className="flex-grow"
+                            />
+                            <Input
+                              type="number"
+                              value={criterion.points}
+                              onChange={(e) => handleUpdateCriterion(index, 'points', e.target.value)}
+                              className="w-16"
+                            />
+                            <Button variant="ghost" size="icon" onClick={() => handleDeleteCriterion(index)}>
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                      <Button variant="outline" onClick={handleAddCriterion} className="w-full">
+                        <Plus className="mr-2 h-4 w-4" />
+                        Adicionar Item
+                      </Button>
                     </div>
                 </div>
               </SheetContent>
@@ -313,7 +364,7 @@ export default function UnitPage() {
             <div className="mt-8 flex justify-center">
                 <Dialog open={isGenerateScoreDialogOpen} onOpenChange={setGenerateScoreDialogOpen}>
                     <DialogTrigger asChild>
-                        <Button variant="secondary" size="lg">
+                        <Button variant="secondary" size="lg" disabled={!unit}>
                             <FilePlus2 className="mr-2 h-5 w-5" />
                             Lançar Pontuação
                         </Button>
@@ -322,7 +373,7 @@ export default function UnitPage() {
                         <DialogHeader>
                             <DialogTitle>Lançar nova pontuação</DialogTitle>
                         </DialogHeader>
-                        <GenerateScoreForm members={members} onScoresCalculated={handleScoresCalculated} />
+                        {unit && <GenerateScoreForm members={members} scoringCriteria={unit.scoringCriteria} onScoresCalculated={handleScoresCalculated} />}
                     </DialogContent>
                 </Dialog>
             </div>
@@ -338,5 +389,3 @@ export default function UnitPage() {
     </main>
   );
 }
-
-    

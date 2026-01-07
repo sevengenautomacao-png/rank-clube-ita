@@ -16,61 +16,67 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 
 import { cn } from "@/lib/utils";
-import type { Member, ScoreInfo } from "@/lib/types";
+import type { Member, ScoreInfo, ScoringCriterion } from "@/lib/types";
 
-const formSchema = z.object({
-  date: z.date({
-    required_error: "A data do evento é obrigatória.",
-  }),
-  members: z.record(z.object({
-    present: z.boolean().default(false),
-    uniform: z.boolean().default(false),
-    bible: z.boolean().default(false),
-    lesson: z.boolean().default(false),
-    lenco: z.boolean().default(false),
-  })),
-});
+const generateFormSchema = (scoringCriteria: ScoringCriterion[]) => {
+  const membersSchema = z.record(z.object(
+    scoringCriteria.reduce((acc, criterion) => {
+      acc[criterion.id] = z.boolean().default(false);
+      return acc;
+    }, {} as Record<string, z.ZodBoolean>)
+  ));
+
+  return z.object({
+    date: z.date({
+      required_error: "A data do evento é obrigatória.",
+    }),
+    members: membersSchema,
+  });
+};
 
 type GenerateScoreFormProps = {
   members: Member[];
+  scoringCriteria: ScoringCriterion[];
   onScoresCalculated: (scoreInfo: ScoreInfo) => void;
 };
 
-const pointValues = {
-  present: 5,
-  uniform: 3,
-  bible: 1,
-  lesson: 1,
-  lenco: 1,
-};
+export default function GenerateScoreForm({ members, scoringCriteria, onScoresCalculated }: GenerateScoreFormProps) {
+  const formSchema = generateFormSchema(scoringCriteria);
+  type FormSchemaType = z.infer<typeof formSchema>;
 
-export default function GenerateScoreForm({ members, onScoresCalculated }: GenerateScoreFormProps) {
-  const defaultValues = {
+  const defaultValues: FormSchemaType = {
     date: new Date(),
     members: members.reduce((acc, member) => {
-      acc[member.id] = { present: true, uniform: false, bible: false, lesson: false, lenco: false };
+      acc[member.id] = scoringCriteria.reduce((critAcc, criterion) => {
+        critAcc[criterion.id] = criterion.id === 'present'; // Default 'presente' to true
+        return critAcc;
+      }, {} as Record<string, boolean>);
       return acc;
-    }, {} as z.infer<typeof formSchema>['members']),
+    }, {} as FormSchemaType['members']),
   };
   
-  const form = useForm<z.infer<typeof formSchema>>({
+  const form = useForm<FormSchemaType>({
     resolver: zodResolver(formSchema),
     defaultValues,
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
+  function onSubmit(values: FormSchemaType) {
     const memberScores: ScoreInfo['memberScores'] = {};
     
     for (const memberId in values.members) {
         const memberData = values.members[memberId];
-        let points = 0;
-        if (memberData.present) points += pointValues.present;
-        if (memberData.uniform) points += pointValues.uniform;
-        if (memberData.bible) points += pointValues.bible;
-        if (memberData.lesson) points += pointValues.lesson;
-        if (memberData.lenco) points += pointValues.lenco;
+        let totalPoints = 0;
+        const scoreDetails: Record<string, boolean> = {};
 
-        memberScores[memberId] = { ...memberData, points };
+        scoringCriteria.forEach(criterion => {
+            const isChecked = memberData[criterion.id];
+            scoreDetails[criterion.id] = isChecked;
+            if (isChecked) {
+                totalPoints += criterion.points;
+            }
+        });
+
+        memberScores[memberId] = { ...scoreDetails, points: totalPoints };
     }
 
     onScoresCalculated({ date: values.date, memberScores });
@@ -142,67 +148,22 @@ export default function GenerateScoreForm({ members, onScoresCalculated }: Gener
                             <CardTitle className="text-lg">{member.name}</CardTitle>
                         </div>
                     </CardHeader>
-                    <CardContent className="p-4 pt-0 grid grid-cols-2 sm:grid-cols-5 gap-4">
-                       <FormField
-                          control={form.control}
-                          name={`members.${member.id}.present`}
-                          render={({ field }) => (
-                            <FormItem className="flex items-center space-x-2 space-y-0">
-                                <FormControl>
-                                    <Checkbox checked={field.value} onCheckedChange={field.onChange} />
-                                </FormControl>
-                                <FormLabel className="font-normal">Presente</FormLabel>
-                            </FormItem>
-                          )}
-                        />
+                    <CardContent className="p-4 pt-0 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                      {scoringCriteria.map(criterion => (
                          <FormField
+                          key={criterion.id}
                           control={form.control}
-                          name={`members.${member.id}.uniform`}
+                          name={`members.${member.id}.${criterion.id}`}
                           render={({ field }) => (
                             <FormItem className="flex items-center space-x-2 space-y-0">
                                 <FormControl>
                                     <Checkbox checked={field.value} onCheckedChange={field.onChange} />
                                 </FormControl>
-                                <FormLabel className="font-normal">Camisa do clube</FormLabel>
+                                <FormLabel className="font-normal">{criterion.label}</FormLabel>
                             </FormItem>
                           )}
                         />
-                         <FormField
-                          control={form.control}
-                          name={`members.${member.id}.bible`}
-                          render={({ field }) => (
-                            <FormItem className="flex items-center space-x-2 space-y-0">
-                                <FormControl>
-                                    <Checkbox checked={field.value} onCheckedChange={field.onChange} />
-                                </FormControl>
-                                <FormLabel className="font-normal">Bíblia</FormLabel>
-                            </FormItem>
-                          )}
-                        />
-                         <FormField
-                          control={form.control}
-                          name={`members.${member.id}.lesson`}
-                          render={({ field }) => (
-                            <FormItem className="flex items-center space-x-2 space-y-0">
-                                <FormControl>
-                                    <Checkbox checked={field.value} onCheckedChange={field.onChange} />
-                                </FormControl>
-                                <FormLabel className="font-normal">Lição</FormLabel>
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name={`members.${member.id}.lenco`}
-                          render={({ field }) => (
-                            <FormItem className="flex items-center space-x-2 space-y-0">
-                                <FormControl>
-                                    <Checkbox checked={field.value} onCheckedChange={field.onChange} />
-                                </FormControl>
-                                <FormLabel className="font-normal">Lenço</FormLabel>
-                            </FormItem>
-                          )}
-                        />
+                      ))}
                     </CardContent>
                  </Card>
               </FormItem>

@@ -6,6 +6,14 @@ const sampleMembers: Member[] = [
     { id: '3', name: 'Pedro Santos', age: 15, role: 'Capitão', className: 'Excursionista', score: 78 },
 ];
 
+const defaultScoringCriteria = [
+    { id: 'present', label: 'Presente', points: 5 },
+    { id: 'uniform', label: 'Camisa do clube', points: 3 },
+    { id: 'bible', label: 'Bíblia', points: 1 },
+    { id: 'lesson', label: 'Lição', points: 1 },
+    { id: 'lenco', label: 'Lenço', points: 1 },
+];
+
 export const initialUnits: Unit[] = [
   {
     id: 'monte-hope',
@@ -13,6 +21,7 @@ export const initialUnits: Unit[] = [
     members: sampleMembers,
     cardImageUrl: 'https://picsum.photos/seed/1/600/400',
     icon: 'Shield',
+    scoringCriteria: defaultScoringCriteria,
   },
   {
     id: 'monte-sinai',
@@ -20,6 +29,7 @@ export const initialUnits: Unit[] = [
     members: [],
     cardColor: 'bg-blue-900',
     icon: 'Mountain',
+    scoringCriteria: defaultScoringCriteria,
   },
   {
     id: 'rubi',
@@ -27,6 +37,7 @@ export const initialUnits: Unit[] = [
     members: [],
     cardImageUrl: 'https://picsum.photos/seed/2/600/400',
     icon: 'Gem',
+    scoringCriteria: defaultScoringCriteria,
   },
   {
     id: 'sinai',
@@ -34,5 +45,6 @@ export const initialUnits: Unit[] = [
     members: [],
     cardColor: 'bg-purple-900',
     icon: 'BookOpen',
+    scoringCriteria: defaultScoringCriteria,
   },
 ];

@@ -1,3 +1,9 @@
+export type ScoringCriterion = {
+  id: string;
+  label: string;
+  points: number;
+};
+
 export type Member = {
   id: string;
   name: string;
@@ -14,15 +20,12 @@ export type Unit = {
   cardImageUrl?: string;
   cardColor?: string;
   icon: string;
+  scoringCriteria: ScoringCriterion[];
 };
 
 export type MemberScore = {
-  present: boolean;
-  uniform: boolean;
-  bible: boolean;
-  lesson: boolean;
-  lenco: boolean;
   points: number;
+  [criterionId: string]: boolean | number;
 }
 
 export type ScoreInfo = {
