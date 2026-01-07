@@ -97,7 +97,7 @@ export default function GenerateScoreForm({ members, scoringCriteria, onScoresCa
     for (const memberId in values.members) {
         const memberData = values.members[memberId];
         let totalPoints = 0;
-        const scoreDetails: Record<string, boolean | number | string> = {};
+        const scoreDetails: Record<string, boolean | number | string | undefined> = {};
 
         scoringCriteria.forEach(criterion => {
             const isChecked = memberData[criterion.id];
@@ -225,7 +225,7 @@ export default function GenerateScoreForm({ members, scoringCriteria, onScoresCa
         </div>
 
         <Button type="submit" className="w-full">
-          Salvar Pontuação
+          {existingReport ? 'Atualizar Pontuação' : 'Salvar Pontuação'}
         </Button>
       </form>
     </Form>
