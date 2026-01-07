@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import type { Unit, Rank, RankData } from '@/lib/types';
+import type { Unit, RankData } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   AlertDialog,
@@ -36,11 +36,13 @@ import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, d
 import { collection, query, doc } from 'firebase/firestore';
 import { signInWithEmailAndPassword, signOut, setPersistence, browserLocalPersistence, browserSessionPersistence } from 'firebase/auth';
 import { Skeleton } from '@/components/ui/skeleton';
-import { defaultScoringCriteria } from '@/lib/data';
-import { ranks as defaultRanks, getRanks } from '@/lib/ranks';
+import { defaultScoringCriteria, defaultRanks } from '@/lib/data';
+import { getRanks } from '@/lib/ranks';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+
 
 const formSchema = z.object({
   name: z.string().min(2, { message: 'O nome deve ter pelo menos 2 caracteres.' }),
@@ -53,6 +55,12 @@ const loginFormSchema = z.object({
   rememberMe: z.boolean().default(false),
 });
 
+const rankFormSchema = z.object({
+  name: z.string().min(2, { message: "O nome deve ter pelo menos 2 caracteres." }),
+  score: z.coerce.number().min(0, { message: "A pontuação deve ser 0 ou maior." }),
+  iconUrl: z.string().url({ message: "Por favor, insira uma URL válida." }).optional().or(z.literal('')),
+});
+
 export default function AdminPage() {
   const router = useRouter();
   const { toast } = useToast();
@@ -63,7 +71,7 @@ export default function AdminPage() {
   const [isAuthLoading, setIsAuthLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   
-  const [customRanks, setCustomRanks] = useState<Rank[]>(getRanks());
+  const [managedRanks, setManagedRanks] = useState<RankData[] | null>(null);
 
   const unitsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -73,12 +81,15 @@ export default function AdminPage() {
   const { data: units, isLoading } = useCollection<Unit>(unitsQuery);
 
   useEffect(() => {
-    // If units are loaded, derive the ranks from the first unit that has them
     if (units && units.length > 0) {
         const unitWithRanks = units.find(u => u.ranks && u.ranks.length > 0);
         if (unitWithRanks) {
-            setCustomRanks(getRanks(unitWithRanks.ranks));
+          setManagedRanks(unitWithRanks.ranks.sort((a, b) => a.score - b.score));
+        } else {
+          setManagedRanks(defaultRanks.sort((a, b) => a.score - b.score));
         }
+    } else if (units && units.length === 0) {
+      setManagedRanks(defaultRanks.sort((a, b) => a.score - b.score));
     }
   }, [units]);
 
@@ -144,10 +155,10 @@ export default function AdminPage() {
       members: [],
       icon: 'Shield', // Default icon
       scoringCriteria: defaultScoringCriteria,
-      ranks: defaultRanks.map(({Icon, ...data}) => data)
+      ranks: managedRanks || defaultRanks,
     };
 
-    addDocumentNonBlocking(collection(firestore, 'units'), { ...newUnit, id: unitId });
+    setDocumentNonBlocking(doc(firestore, 'units', unitId), newUnit, {});
     
     toast({
       title: 'Unidade criada!',
@@ -182,15 +193,10 @@ export default function AdminPage() {
     setEditingUnit(null);
   }
 
-   function handleRankIconChange(rankName: string, iconUrl: string) {
-    const updatedRanks = customRanks.map(r => r.name === rankName ? { ...r, iconUrl } : r);
-    setCustomRanks(updatedRanks);
-  };
-
   async function handleSaveRanks() {
-    if (!firestore || !units) return;
-
-    const ranksToSave: RankData[] = customRanks.map(({ Icon, ...data }) => data);
+    if (!firestore || !units || !managedRanks) return;
+    
+    const ranksToSave = managedRanks.sort((a,b) => a.score - b.score);
 
     const batch = units.map(unit => {
         const unitRef = doc(firestore, 'units', unit.id);
@@ -201,7 +207,7 @@ export default function AdminPage() {
 
     toast({
       title: 'Patentes Atualizadas!',
-      description: 'Os ícones das patentes foram salvos para todas as unidades.',
+      description: 'As patentes foram salvas para todas as unidades.',
     });
   }
 
@@ -374,37 +380,75 @@ export default function AdminPage() {
           
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Star />
-                Gerenciar Patentes
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Star />
+                  Gerenciar Patentes
+                </div>
+                <RankFormDialog 
+                  triggerButton={<Button variant="outline"><Plus className="mr-2 h-4 w-4" /> Adicionar Patente</Button>}
+                  onSave={(newRank) => {
+                    const updatedRanks = [...(managedRanks || []), newRank].sort((a,b)=> a.score - b.score);
+                    setManagedRanks(updatedRanks);
+                  }}
+                />
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {customRanks.map(rank => (
-                <div key={rank.name} className="flex items-center gap-4">
-                  <Label htmlFor={`rank-icon-${rank.name}`} className="w-24 flex-shrink-0">{rank.name}</Label>
-                  <div className="relative flex-grow">
-                     <Input
-                        id={`rank-icon-${rank.name}`}
-                        type="text"
-                        placeholder="URL do ícone"
-                        value={rank.iconUrl || ''}
-                        onChange={(e) => handleRankIconChange(rank.name, e.target.value)}
-                        className="pl-8"
-                      />
-                      <div className="absolute inset-y-0 left-0 flex items-center pl-2">
-                        {rank.iconUrl ? (
-                          <img src={rank.iconUrl} alt={rank.name} className="h-5 w-5 object-contain" />
-                        ) : (
-                          <Upload className="h-5 w-5 text-muted-foreground" />
-                        )}
-                      </div>
+              {managedRanks === null && <Skeleton className="h-20 w-full" />}
+              {managedRanks && managedRanks.map(rank => (
+                <div key={rank.name} className="flex items-center gap-4 p-2 border rounded-lg">
+                  <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center">
+                    {rank.iconUrl ? (
+                      <img src={rank.iconUrl} alt={rank.name} className="h-6 w-6 object-contain" />
+                    ) : (
+                      <Star className="h-6 w-6 text-muted-foreground" />
+                    )}
+                  </div>
+                  <div className="flex-grow">
+                    <p className="font-semibold">{rank.name}</p>
+                    <p className="text-sm text-muted-foreground">Pontos: {rank.score}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <RankFormDialog 
+                       triggerButton={<Button variant="ghost" size="icon"><Edit className="h-4 w-4" /></Button>}
+                       onSave={(updatedRank) => {
+                          const updatedRanks = managedRanks.map(r => r.name === rank.name ? {...r, ...updatedRank} : r).sort((a,b) => a.score - b.score);
+                          setManagedRanks(updatedRanks);
+                       }}
+                       existingRank={rank}
+                    />
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Excluir Patente?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Tem certeza que deseja excluir a patente "{rank.name}"? Esta ação não pode ser desfeita.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => {
+                            const updatedRanks = managedRanks.filter(r => r.name !== rank.name);
+                            setManagedRanks(updatedRanks);
+                          }}>
+                            Excluir
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </div>
                 </div>
               ))}
-              <Button onClick={handleSaveRanks} className="w-full mt-4">
-                Salvar Ícones de Patente
+              <Button onClick={handleSaveRanks} className="w-full mt-4" disabled={managedRanks === null}>
+                Salvar Alterações nas Patentes
               </Button>
+               <p className="text-xs text-muted-foreground text-center mt-2">
+                Salvar irá aplicar a lista de patentes acima para TODAS as unidades.
+              </p>
             </CardContent>
           </Card>
 
@@ -533,5 +577,93 @@ function EditUnitForm({ unit, onUpdate }: { unit: Unit, onUpdate: (values: Parti
     </Form>
   )
 }
+
+function RankFormDialog({ triggerButton, onSave, existingRank }: { triggerButton: React.ReactElement, onSave: (rank: RankData) => void, existingRank?: RankData }) {
+  const [isOpen, setIsOpen] = useState(false);
+  
+  const form = useForm<z.infer<typeof rankFormSchema>>({
+    resolver: zodResolver(rankFormSchema),
+    defaultValues: existingRank || {
+      name: "",
+      score: 0,
+      iconUrl: "",
+    },
+  });
+  
+  useEffect(() => {
+    if (isOpen) {
+      form.reset(existingRank || { name: "", score: 0, iconUrl: "" });
+    }
+  }, [isOpen, existingRank, form]);
+
+
+  const handleSubmit = (values: z.infer<typeof rankFormSchema>) => {
+    onSave(values);
+    setIsOpen(false);
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogTrigger asChild>{triggerButton}</DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{existingRank ? 'Editar Patente' : 'Adicionar Nova Patente'}</DialogTitle>
+          <DialogDescription>
+            Defina os detalhes da patente. A pontuação é o mínimo necessário para alcançar esta patente.
+          </DialogDescription>
+        </DialogHeader>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Nome da Patente</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Ex: Soldado" {...field} disabled={!!existingRank} />
+                  </FormControl>
+                   {!!existingRank && <p className="text-xs text-muted-foreground">O nome de patentes existentes não pode ser alterado.</p>}
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="score"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Pontuação Mínima</FormLabel>
+                  <FormControl>
+                    <Input type="number" placeholder="Ex: 10" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="iconUrl"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>URL do Ícone (Opcional)</FormLabel>
+                  <FormControl>
+                    <Input placeholder="https://exemplo.com/icone.png" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>Cancelar</Button>
+              <Button type="submit">Salvar</Button>
+            </DialogFooter>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+    
 
     
