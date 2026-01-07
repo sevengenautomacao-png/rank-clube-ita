@@ -43,14 +43,18 @@ export function ThemeSwitcher() {
           <span>Modern Dark</span>
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => setTheme("theme-retro-light")}>
-           <Sun className="mr-2 h-4 w-4" />
-           <MonitorSmartphone className="mr-2 h-4 w-4" />
-          <span>Retro Light</span>
+           <div className="flex items-center">
+            <Sun className="mr-2 h-4 w-4 flex-shrink-0" />
+            <MonitorSmartphone className="mr-2 h-4 w-4 flex-shrink-0" />
+            <span className="whitespace-normal">Retro Light</span>
+           </div>
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => setTheme("theme-retro-dark")}>
-           <Moon className="mr-2 h-4 w-4" />
-           <MonitorSmartphone className="mr-2 h-4 w-4" />
-          <span>Retro Dark</span>
+           <div className="flex items-center">
+            <Moon className="mr-2 h-4 w-4 flex-shrink-0" />
+            <MonitorSmartphone className="mr-2 h-4 w-4 flex-shrink-0" />
+            <span className="whitespace-normal">Retro Dark</span>
+           </div>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
