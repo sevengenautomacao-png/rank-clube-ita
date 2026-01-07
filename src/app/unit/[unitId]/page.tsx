@@ -4,7 +4,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Plus, Trash2, User, Users, Settings, Shield, Mountain, Gem, BookOpen, type LucideIcon } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, User, Users, Settings, Shield, Mountain, Gem, BookOpen, Star, type LucideIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
@@ -51,11 +51,18 @@ export default function UnitPage() {
       }
     }
   }, [unit, unitId]);
+  
+  useEffect(() => {
+    if (unit) {
+      const updatedUnit = { ...unit, members };
+      setUnit(updatedUnit);
+    }
+  }, [members]);
 
   useEffect(() => {
     if (initialUnit) {
       setUnit(initialUnit);
-      setMembers(initialUnit.members);
+      setMembers(initialUnit.members.map(m => ({...m, score: m.score ?? undefined})));
       if (initialUnit.cardImageUrl) {
         setBackground({ type: 'image', value: initialUnit.cardImageUrl });
       } else if (initialUnit.cardColor) {
@@ -73,6 +80,7 @@ export default function UnitPage() {
     const newMember: Member = {
       ...newMemberData,
       id: new Date().getTime().toString(), // simple unique id
+      score: 0,
     };
     setMembers(prevMembers => [...prevMembers, newMember]);
     setAddMemberSheetOpen(false);
@@ -95,6 +103,20 @@ export default function UnitPage() {
   const handleIconChange = (iconName: string) => {
     setUnit(prevUnit => prevUnit ? {...prevUnit, icon: iconName} : null)
   }
+
+  const handleGenerateScore = (memberId: string) => {
+    const newScore = Math.floor(Math.random() * 101);
+    setMembers(prevMembers => 
+      prevMembers.map(member => 
+        member.id === memberId ? { ...member, score: newScore } : member
+      )
+    );
+    const memberName = members.find(m => m.id === memberId)?.name;
+    toast({
+      title: "Pontuação Gerada!",
+      description: `Nova pontuação para ${memberName}: ${newScore}`,
+    });
+  };
 
   const pageStyle: React.CSSProperties =
     background.type === 'image'
@@ -246,6 +268,15 @@ export default function UnitPage() {
                   <p><strong className="text-foreground">Idade:</strong> {member.age}</p>
                   <p><strong className="text-foreground">Função:</strong> {member.role}</p>
                   <p><strong className="text-foreground">Classe:</strong> {member.className}</p>
+                   {member.score !== undefined && (
+                    <div className="flex items-center pt-2">
+                        <Star className="h-5 w-5 text-yellow-400 mr-2" />
+                        <p><strong className="text-foreground">Pontuação:</strong> {member.score}</p>
+                    </div>
+                  )}
+                  <Button onClick={() => handleGenerateScore(member.id)} variant="secondary" className="mt-4 w-full">
+                    Gerar Pontuação
+                  </Button>
                 </CardContent>
                 <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity focus-within:opacity-100">
                   <AlertDialog>

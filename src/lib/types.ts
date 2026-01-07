@@ -4,6 +4,7 @@ export type Member = {
   age: number;
   role: string; // 'funcao/cargo'
   className: string; // 'classe'
+  score?: number;
 };
 
 export type Unit = {

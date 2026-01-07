@@ -1,9 +1,9 @@
 import type { Unit, Member } from './types';
 
 const sampleMembers: Member[] = [
-    { id: '1', name: 'João Silva', age: 14, role: 'Conselheiro', className: 'Guia' },
-    { id: '2', name: 'Maria Souza', age: 12, role: 'Membro', className: 'Amigo' },
-    { id: '3', name: 'Pedro Santos', age: 15, role: 'Capitão', className: 'Excursionista' },
+    { id: '1', name: 'João Silva', age: 14, role: 'Conselheiro', className: 'Guia', score: 85 },
+    { id: '2', name: 'Maria Souza', age: 12, role: 'Membro', className: 'Amigo', score: 92 },
+    { id: '3', name: 'Pedro Santos', age: 15, role: 'Capitão', className: 'Excursionista', score: 78 },
 ];
 
 export const initialUnits: Unit[] = [
