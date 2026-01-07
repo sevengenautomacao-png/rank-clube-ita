@@ -648,7 +648,7 @@ function RankFormDialog({ triggerButton, onSave, existingRank }: { triggerButton
                 <FormItem>
                   <FormLabel>URL do Ícone (Opcional)</FormLabel>
                   <FormControl>
-                    <Input placeholder="https://exemplo.com/icone.png" {...field} />
+                    <Input placeholder="https://imgur.com/upload" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
