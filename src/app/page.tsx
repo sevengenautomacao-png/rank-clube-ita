@@ -8,7 +8,7 @@ export default function Home() {
     <main className="flex flex-col items-center min-h-screen p-4 sm:p-8 bg-background">
       <header className="text-center mb-8 sm:mb-12">
         <h1 className="text-4xl sm:text-5xl font-bold font-headline text-primary">
-          Pathfinder Ranker
+          Rank Clube Ita
         </h1>
         <p className="text-lg text-muted-foreground mt-2">
           Gerencie as unidades de desbravadores.
