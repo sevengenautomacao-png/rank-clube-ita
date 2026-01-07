@@ -157,7 +157,7 @@ export default function Home() {
                                     </p>
                                 )}
                                 <div className="flex items-center gap-1.5 mt-1">
-                                    {member.allPatents?.map(p => {
+                                    {member.allPatents?.slice(-3).map(p => {
                                         const PatentIcon = p.Icon;
                                         return p.iconUrl ? (
                                             <img key={p.name} src={p.iconUrl} alt={p.name} title={p.name} className="h-4 w-4 object-contain" />
