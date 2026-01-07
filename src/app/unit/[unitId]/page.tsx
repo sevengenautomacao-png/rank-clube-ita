@@ -74,14 +74,11 @@ export default function UnitPage() {
   const handleSaveChanges = () => {
     if (!unitRef || !unit) return;
 
-    const updatedUnitData = {
-      ...unit,
+    const updatedUnitData: Partial<Unit> = {
       name: localUnitName,
       icon: localUnitIcon,
-      cardImageUrl: background.type === 'image' ? background.value : (unit.cardImageUrl || ''),
-      members,
+      cardImageUrl: background.type === 'image' ? background.value : '',
       scoringCriteria,
-      scoreHistory,
     };
     
     setDocumentNonBlocking(unitRef, updatedUnitData, { merge: true });
@@ -206,10 +203,11 @@ export default function UnitPage() {
     if (unitRef) {
       setDocumentNonBlocking(unitRef, { members: updatedMembers, scoreHistory: updatedScoreHistory }, { merge: true });
     }
+    const reportDate = reportToDelete.date instanceof Date ? reportToDelete.date : (reportToDelete.date as any).toDate();
 
     toast({
       title: "Relatório Excluído!",
-      description: `O relatório de ${new Date(reportToDelete.date).toLocaleDateString()} foi excluído.`,
+      description: `O relatório de ${reportDate.toLocaleDateString()} foi excluído.`,
       variant: "destructive"
     });
   };

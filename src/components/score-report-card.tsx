@@ -38,6 +38,19 @@ export default function ScoreReportCard({ report, members, scoringCriteria, onDe
         return members.find(m => m.id === memberId)?.name || 'Membro desconhecido';
     };
 
+    const getReportDate = () => {
+        if (report.date instanceof Date) {
+            return report.date;
+        }
+        // Firestore timestamps have toDate() method
+        if (report.date && typeof (report.date as any).toDate === 'function') {
+            return (report.date as any).toDate();
+        }
+        return new Date(report.date); // Fallback for string dates
+    }
+
+    const displayDate = getReportDate();
+
     return (
         <Collapsible open={isOpen} onOpenChange={setIsOpen}>
             <Card>
@@ -45,7 +58,7 @@ export default function ScoreReportCard({ report, members, scoringCriteria, onDe
                     <div className="flex items-center gap-3">
                         <FileText className="h-6 w-6 text-primary" />
                         <CardTitle className="text-xl">
-                            Relatório de {format(new Date(report.date), "PPP", { locale: ptBR })}
+                            Relatório de {format(displayDate, "PPP", { locale: ptBR })}
                         </CardTitle>
                     </div>
                     <div className="flex items-center gap-2">
@@ -60,11 +73,11 @@ export default function ScoreReportCard({ report, members, scoringCriteria, onDe
                                     <span className="sr-only">Excluir Relatório</span>
                                 </Button>
                             </AlertDialogTrigger>
-                            <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                            <AlertDialogContent>
                                 <AlertDialogHeader>
                                     <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
                                     <AlertDialogDescription>
-                                        Essa ação não pode ser desfeita. Isso irá excluir permanentemente o relatório de {format(new Date(report.date), "dd/MM/yyyy")} e reverterá as pontuações aplicadas aos membros.
+                                        Essa ação não pode ser desfeita. Isso irá excluir permanentemente o relatório de {format(displayDate, "dd/MM/yyyy")} e reverterá as pontuações aplicadas aos membros.
                                     </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
