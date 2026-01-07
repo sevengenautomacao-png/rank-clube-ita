@@ -4,7 +4,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Plus, Trash2, User, Users, Settings, Shield, Mountain, Gem, BookOpen, Star, type LucideIcon, FilePlus2, GripVertical, Edit } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, User, Users, Settings, Shield, Mountain, Gem, BookOpen, Star, type LucideIcon, FilePlus2, GripVertical, Edit, Download } from 'lucide-react';
+import * as XLSX from 'xlsx';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
@@ -81,7 +82,7 @@ export default function UnitPage() {
       name: localUnitName,
       icon: localUnitIcon,
       cardImageUrl: background.type === 'image' ? background.value : "",
-      cardColor: background.type === 'color' ? background.value : '',
+      cardColor: background.type === 'color' ? background.value : "",
       scoringCriteria,
     };
     
@@ -99,6 +100,7 @@ export default function UnitPage() {
       ...newMemberData,
       id: new Date().getTime().toString(), // simple unique id
       score: 0,
+      ranking: 0,
     };
     const updatedMembers = [...members, newMember];
     setMembers(updatedMembers);
@@ -258,6 +260,56 @@ export default function UnitPage() {
       title: "Relatório Excluído!",
       description: `O relatório de ${reportDate.toLocaleDateString()} foi excluído.`,
       variant: "destructive"
+    });
+  };
+
+  const handleExportToExcel = () => {
+    // 1. Ranking Geral sheet
+    const rankingData = members
+        .sort((a, b) => b.score - a.score)
+        .map((member, index) => ({
+            'Ranking': index + 1,
+            'Nome': member.name,
+            'Pontuação Total': member.score,
+            'Classe': member.className,
+            'Função': member.role,
+            'Idade': member.age,
+        }));
+    const rankingWorksheet = XLSX.utils.json_to_sheet(rankingData);
+    
+    // 2. Histórico de Pontuação sheet
+    const historyData: any[] = [];
+    scoreHistory.forEach(report => {
+        const date = report.date instanceof Date ? report.date.toLocaleDateString('pt-BR') : new Date(report.date).toLocaleDateString('pt-BR');
+        Object.entries(report.memberScores).forEach(([memberId, scoreDetails]) => {
+            const member = members.find(m => m.id === memberId);
+            if (member) {
+                const row: any = {
+                    'Data': date,
+                    'Membro': member.name,
+                };
+                scoringCriteria.forEach(criterion => {
+                    row[criterion.label] = scoreDetails[criterion.id] ? criterion.points : 0;
+                });
+                row['Observação'] = scoreDetails.observation || '';
+                row['Total do Dia'] = scoreDetails.points;
+                historyData.push(row);
+            }
+        });
+    });
+    const historyWorksheet = XLSX.utils.json_to_sheet(historyData);
+
+    // Create workbook and add sheets
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, rankingWorksheet, 'Ranking Geral');
+    XLSX.utils.book_append_sheet(workbook, historyWorksheet, 'Histórico de Pontuação');
+
+    // Download the file
+    XLSX.writeFile(workbook, `Relatorio_${unit?.name.replace(/ /g, '_')}_${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.xlsx`);
+
+    toast({
+        title: "Exportação Concluída",
+        description: "O arquivo Excel foi baixado.",
     });
   };
 
@@ -481,7 +533,13 @@ export default function UnitPage() {
             </div>
              {scoreHistory.length > 0 && (
               <div className="mt-12">
-                <h2 className="text-2xl font-bold mb-4 text-center">Histórico de Pontuações</h2>
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-2xl font-bold text-center">Histórico de Pontuações</h2>
+                  <Button variant="outline" onClick={handleExportToExcel} disabled={!unit}>
+                      <Download className="mr-2 h-4 w-4" />
+                      Exportar para Excel
+                  </Button>
+                </div>
                 <div className="space-y-6">
                   {scoreHistory.map((report) => (
                       <ScoreReportCard 

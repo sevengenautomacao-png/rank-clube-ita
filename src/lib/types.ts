@@ -11,6 +11,7 @@ export type Member = {
   role: string; // 'funcao/cargo'
   className: string; // 'classe'
   score: number;
+  ranking: number;
 };
 
 export type Unit = {
@@ -27,7 +28,7 @@ export type Unit = {
 export type MemberScore = {
   points: number;
   observation?: string;
-  [criterionId: string]: boolean | number;
+  [criterionId: string]: boolean | number | string;
 }
 
 export type ScoreInfo = {
