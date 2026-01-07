@@ -10,4 +10,6 @@ export type Unit = {
   id: string;
   name: string;
   members: Member[];
+  cardImageUrl?: string;
+  cardColor?: string;
 };
