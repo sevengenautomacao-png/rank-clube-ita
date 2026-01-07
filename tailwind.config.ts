@@ -10,7 +10,7 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        body: ['"Press Start 2P"', 'cursive'],
+        body: ['"Inter"', 'sans-serif'],
         headline: ['"Press Start 2P"', 'cursive'],
         code: ['monospace'],
       },
