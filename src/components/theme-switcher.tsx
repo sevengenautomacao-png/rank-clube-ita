@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -21,18 +22,18 @@ export function ThemeSwitcher() {
   }, []);
 
   if (!isMounted) {
-    return <div className="h-10 w-10"></div>
+    return <div className="h-10 w-36"></div>
   }
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="icon">
-          <Palette className="h-[1.2rem] w-[1.2rem]" />
-          <span className="sr-only">Select Theme</span>
+        <Button variant="outline">
+          <Palette className="mr-2 h-[1.2rem] w-[1.2rem]" />
+          Selecionar modo de jogo
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
+      <DropdownMenuContent align="center">
         <DropdownMenuItem onClick={() => setTheme("theme-light")}>
           <Sun className="mr-2 h-4 w-4" />
           <span>Modern Light</span>

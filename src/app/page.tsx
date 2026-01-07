@@ -59,19 +59,16 @@ export default function Home() {
   return (
     <div className={`flex flex-col min-h-screen ${fontClassName}`}>
       <main className="flex-grow flex flex-col items-center p-4 sm:p-8 bg-background">
-        <header className="w-full max-w-4xl relative text-center mb-8 sm:mb-12">
+        <header className="w-full max-w-4xl text-center mb-8 sm:mb-12">
            <h1 className="text-2xl sm:text-4xl font-bold text-primary">
             Rank Clube Ita
           </h1>
-          <div className="absolute top-0 right-0">
-            <ThemeSwitcher />
-          </div>
+            <p className="text-sm text-muted-foreground mt-2 mb-4">
+              Gerencie as unidades de desbravadores.
+            </p>
+           <ThemeSwitcher />
         </header>
-        <div className="w-full max-w-4xl text-center mb-8">
-          <p className="text-sm text-muted-foreground mt-2">
-            Gerencie as unidades de desbravadores.
-          </p>
-        </div>
+
         <div className="w-full max-w-4xl grid grid-cols-1 sm:grid-cols-2 gap-6">
           {isLoading && (
             <>
@@ -164,7 +161,7 @@ export default function Home() {
                                 </div>
                                 <Link href={`/unit/${member.unitId}`} className="text-sm text-muted-foreground hover:underline mt-1 block">
                                     Unidade: {member.unitName}
-                                </Link>
+                                 </Link>
                             </div>
                         </div>
                         <div className="flex items-center gap-2 text-lg font-bold text-yellow-400">
