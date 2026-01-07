@@ -3,13 +3,24 @@
 import { useTheme } from '@/components/theme-provider';
 import { Button } from '@/components/ui/button';
 import { Moon, Sun } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 export function ThemeSwitcher() {
   const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const toggleTheme = () => {
     setTheme(theme === 'retro' ? 'modern' : 'retro');
   };
+
+  if (!mounted) {
+    // Render a placeholder or nothing on the server and initial client render
+    return <Button variant="outline" size="icon" disabled={true}><Sun className="h-[1.2rem] w-[1.2rem]"/></Button>;
+  }
 
   return (
     <Button variant="outline" size="icon" onClick={toggleTheme}>
