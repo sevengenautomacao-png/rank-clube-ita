@@ -118,7 +118,7 @@ export default function UnitPage() {
     setSettingsSheetOpen(false);
   };
 
-  const handleAddMember = (newMemberData: Omit<Member, 'id' | 'score'>) => {
+  const handleAddMember = (newMemberData: Omit<Member, 'id' | 'score' | 'ranking'>) => {
     const newMember: Member = {
       ...newMemberData,
       id: new Date().getTime().toString(), // simple unique id
@@ -475,7 +475,7 @@ export default function UnitPage() {
                         <Label htmlFor="unit-password">Senha da Unidade</Label>
                         <Input
                             id="unit-password"
-                            type="password"
+                            type="text"
                             placeholder="Deixe em branco para remover a senha"
                             value={localUnitPassword}
                             onChange={(e) => setLocalUnitPassword(e.target.value)}
@@ -655,3 +655,5 @@ export default function UnitPage() {
     </main>
   );
 }
+
+    
