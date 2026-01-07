@@ -163,7 +163,7 @@ export default function GenerateScoreForm({ members, onScoresCalculated }: Gener
                                 <FormControl>
                                     <Checkbox checked={field.value} onCheckedChange={field.onChange} />
                                 </FormControl>
-                                <FormLabel className="font-normal">Uniforme</FormLabel>
+                                <FormLabel className="font-normal">Camisa do clube</FormLabel>
                             </FormItem>
                           )}
                         />
