@@ -45,7 +45,7 @@ export default function ScoreReportCard({ report, members, scoringCriteria, onDe
                     <div className="flex items-center gap-3">
                         <FileText className="h-6 w-6 text-primary" />
                         <CardTitle className="text-xl">
-                            Relatório de {format(report.date, "PPP", { locale: ptBR })}
+                            Relatório de {format(new Date(report.date), "PPP", { locale: ptBR })}
                         </CardTitle>
                     </div>
                     <div className="flex items-center gap-2">
@@ -64,7 +64,7 @@ export default function ScoreReportCard({ report, members, scoringCriteria, onDe
                                 <AlertDialogHeader>
                                     <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
                                     <AlertDialogDescription>
-                                        Essa ação não pode ser desfeita. Isso irá excluir permanentemente o relatório de {format(report.date, "dd/MM/yyyy")} e reverterá as pontuações aplicadas aos membros.
+                                        Essa ação não pode ser desfeita. Isso irá excluir permanentemente o relatório de {format(new Date(report.date), "dd/MM/yyyy")} e reverterá as pontuações aplicadas aos membros.
                                     </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>

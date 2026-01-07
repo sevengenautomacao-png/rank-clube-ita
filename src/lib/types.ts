@@ -21,6 +21,7 @@ export type Unit = {
   cardColor?: string;
   icon: string;
   scoringCriteria: ScoringCriterion[];
+  scoreHistory?: ScoreInfo[];
 };
 
 export type MemberScore = {

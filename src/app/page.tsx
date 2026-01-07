@@ -1,9 +1,16 @@
+
+'use client';
+
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { initialUnits } from '@/lib/data';
 import { Users, Shield, Mountain, Gem, BookOpen, type LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { collection, query } from 'firebase/firestore';
+import { Skeleton } from '@/components/ui/skeleton';
+import type { Unit } from '@/lib/types';
+
 
 const iconMap: { [key: string]: LucideIcon } = {
   Shield,
@@ -14,6 +21,15 @@ const iconMap: { [key: string]: LucideIcon } = {
 
 
 export default function Home() {
+  const firestore = useFirestore();
+
+  const unitsQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, 'units'));
+  }, [firestore]);
+
+  const { data: units, isLoading } = useCollection<Unit>(unitsQuery);
+
   return (
     <div className="flex flex-col min-h-screen">
       <main className="flex-grow flex flex-col items-center p-4 sm:p-8 bg-background">
@@ -26,7 +42,15 @@ export default function Home() {
           </p>
         </header>
         <div className="w-full max-w-4xl grid grid-cols-1 sm:grid-cols-2 gap-6">
-          {initialUnits.map((unit) => {
+          {isLoading && (
+            <>
+              <Skeleton className="aspect-square rounded-lg" />
+              <Skeleton className="aspect-square rounded-lg" />
+              <Skeleton className="aspect-square rounded-lg" />
+              <Skeleton className="aspect-square rounded-lg" />
+            </>
+          )}
+          {units?.map((unit) => {
             const Icon = iconMap[unit.icon] || Shield;
             return (
               <Link href={`/unit/${unit.id}`} key={unit.id} className="transform transition-transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-ring rounded-lg">
@@ -53,7 +77,7 @@ export default function Home() {
                     <CardContent className="p-0">
                       <div className="flex items-center gap-2 text-lg text-gray-200">
                         <Users className="h-5 w-5" />
-                        <span>{unit.members.length} membro(s)</span>
+                        <span>{unit.members?.length || 0} membro(s)</span>
                       </div>
                     </CardContent>
                   </div>

@@ -19,7 +19,6 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { initialUnits } from '@/lib/data';
 import type { Unit } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -33,6 +32,10 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase';
+import { collection, query, doc } from 'firebase/firestore';
+import { Skeleton } from '@/components/ui/skeleton';
+import { defaultScoringCriteria } from '@/lib/data';
 
 const formSchema = z.object({
   name: z.string().min(2, { message: 'O nome deve ter pelo menos 2 caracteres.' }),
@@ -41,7 +44,14 @@ const formSchema = z.object({
 export default function AdminPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const [units, setUnits] = useState<Unit[]>(initialUnits);
+  const firestore = useFirestore();
+
+  const unitsQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, 'units'));
+  }, [firestore]);
+
+  const { data: units, isLoading } = useCollection<Unit>(unitsQuery);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -50,15 +60,11 @@ export default function AdminPage() {
     },
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    const newUnit: Unit = {
-      id: values.name.toLowerCase().replace(/\s+/g, '-'),
-      name: values.name,
-      members: [],
-      icon: 'Shield', // Default icon
-    };
-
-    if (units.some(unit => unit.id === newUnit.id)) {
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    if (!firestore) return;
+    const unitId = values.name.toLowerCase().replace(/\s+/g, '-');
+    
+    if (units?.some(unit => unit.id === unitId)) {
       toast({
         variant: 'destructive',
         title: 'Erro!',
@@ -67,11 +73,16 @@ export default function AdminPage() {
       return;
     }
 
-    const newUnits = [...units, newUnit];
-    // This is not ideal, should be replaced with a proper state management
-    initialUnits.push(newUnit);
-    setUnits(newUnits);
+    const newUnit: Omit<Unit, 'id'> = {
+      name: values.name,
+      members: [],
+      icon: 'Shield', // Default icon
+      scoringCriteria: defaultScoringCriteria
+    };
 
+    const unitRef = doc(firestore, 'units', unitId);
+    addDocumentNonBlocking(collection(firestore, 'units'), { ...newUnit, id: unitId });
+    
     toast({
       title: 'Unidade criada!',
       description: `A unidade "${values.name}" foi criada com sucesso.`,
@@ -80,16 +91,12 @@ export default function AdminPage() {
   }
 
   function handleDeleteUnit(unitId: string) {
-    const unitToDelete = units.find(u => u.id === unitId);
+    if (!firestore) return;
+    const unitToDelete = units?.find(u => u.id === unitId);
     if (!unitToDelete) return;
     
-    // This is not ideal, should be replaced with a proper state management
-    const unitIndex = initialUnits.findIndex(u => u.id === unitId);
-    if (unitIndex > -1) {
-        initialUnits.splice(unitIndex, 1);
-    }
-    
-    setUnits(units.filter(u => u.id !== unitId));
+    const unitRef = doc(firestore, 'units', unitId);
+    deleteDocumentNonBlocking(unitRef);
     
     toast({
         title: "Unidade Excluída",
@@ -141,7 +148,7 @@ export default function AdminPage() {
                       </FormItem>
                     )}
                   />
-                  <Button type="submit" className="w-full">
+                  <Button type="submit" className="w-full" disabled={!firestore}>
                     Criar Unidade
                   </Button>
                 </form>
@@ -154,7 +161,11 @@ export default function AdminPage() {
               <CardTitle>Unidades Existentes</CardTitle>
             </CardHeader>
             <CardContent>
-                {units.length > 0 ? (
+                {isLoading && <div className="space-y-2">
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-full" />
+                </div> }
+                {units && units.length > 0 ? (
                     <ul className="space-y-4">
                         {units.map(unit => (
                             <li key={unit.id} className="flex items-center justify-between p-3 bg-card rounded-lg border">
@@ -193,7 +204,7 @@ export default function AdminPage() {
                         ))}
                     </ul>
                 ) : (
-                    <p className="text-muted-foreground text-center">Nenhuma unidade criada ainda.</p>
+                  !isLoading && <p className="text-muted-foreground text-center">Nenhuma unidade criada ainda.</p>
                 )}
             </CardContent>
           </Card>

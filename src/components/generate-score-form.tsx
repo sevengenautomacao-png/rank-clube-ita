@@ -103,7 +103,7 @@ export default function GenerateScoreForm({ members, scoringCriteria, onScoresCa
                       )}
                     >
                       {field.value ? (
-                        format(field.value, "PPP", { locale: ptBR })
+                        format(new Date(field.value), "PPP", { locale: ptBR })
                       ) : (
                         <span>Escolha uma data</span>
                       )}

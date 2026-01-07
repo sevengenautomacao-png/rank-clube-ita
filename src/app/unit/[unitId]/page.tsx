@@ -4,13 +4,11 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Plus, Trash2, User, Users, Settings, Shield, Mountain, Gem, BookOpen, Star, type LucideIcon, FilePlus2, GripVertical, Edit, ChevronDown, ChevronUp } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, User, Users, Settings, Shield, Mountain, Gem, BookOpen, Star, type LucideIcon, FilePlus2, GripVertical, Edit } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { initialUnits } from '@/lib/data';
 import type { Unit, Member, ScoreInfo, ScoringCriterion } from '@/lib/types';
 import AddMemberForm from '@/components/add-member-form';
 import EditMemberForm from '@/components/edit-member-form';
@@ -21,7 +19,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { useDoc, useFirestore, useMemoFirebase, setDocumentNonBlocking } from '@/firebase';
+import { doc } from 'firebase/firestore';
+
 
 const iconMap: { [key: string]: LucideIcon } = {
   Shield,
@@ -36,56 +36,60 @@ export default function UnitPage() {
   const params = useParams();
   const { toast } = useToast();
   const unitId = params.unitId as string;
+  const firestore = useFirestore();
 
-  const [unit, setUnit] = useState<Unit | null>(null);
+  const unitRef = useMemoFirebase(() => {
+    if (!firestore || !unitId) return null;
+    return doc(firestore, 'units', unitId);
+  }, [firestore, unitId]);
+
+  const { data: unit, isLoading: isUnitLoading } = useDoc<Unit>(unitRef);
+
   const [members, setMembers] = useState<Member[]>([]);
+  const [scoringCriteria, setScoringCriteria] = useState<ScoringCriterion[]>([]);
+  const [scoreHistory, setScoreHistory] = useState<ScoreInfo[]>([]);
   const [isAddMemberSheetOpen, setAddMemberSheetOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<Member | null>(null);
   const [isSettingsSheetOpen, setSettingsSheetOpen] = useState(false);
   const [isGenerateScoreDialogOpen, setGenerateScoreDialogOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
   const [background, setBackground] = useState({ type: 'color', value: '#111827' }); // dark gray default
-  const [scoringCriteria, setScoringCriteria] = useState<ScoringCriterion[]>([]);
-  const [scoreHistory, setScoreHistory] = useState<ScoreInfo[]>([]);
+  const [localUnitName, setLocalUnitName] = useState("");
+  const [localUnitIcon, setLocalUnitIcon] = useState("");
 
-  const initialUnit = useMemo(() => initialUnits.find((u) => u.id === unitId), [unitId]);
-
-  useEffect(() => {
-    // This is a temporary solution to update the unit data on the home page.
-    // A proper solution would involve a global state management or passing callbacks.
-    if (unit) {
-      const unitIndex = initialUnits.findIndex(u => u.id === unitId);
-      if (unitIndex !== -1) {
-        initialUnits[unitIndex] = unit;
-      }
-    }
-  }, [unit, unitId]);
-  
   useEffect(() => {
     if (unit) {
-      const updatedUnit = { ...unit, members, scoringCriteria };
-      setUnit(updatedUnit);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [members, scoringCriteria]);
-
-  useEffect(() => {
-    if (initialUnit) {
-      setUnit(initialUnit);
-      setMembers(initialUnit.members.map(m => ({...m, score: m.score ?? 0})));
-      setScoringCriteria(initialUnit.scoringCriteria);
-      if (initialUnit.cardImageUrl) {
-        setBackground({ type: 'image', value: initialUnit.cardImageUrl });
-      } else if (initialUnit.cardColor) {
-        // This is tricky because tailwind classes are not hex values.
-        // For now, we will just use a default.
-        // A better approach would be to store hex values in the data.
+      setMembers(unit.members?.map(m => ({ ...m, score: m.score ?? 0 })) || []);
+      setScoringCriteria(unit.scoringCriteria || []);
+      setScoreHistory(unit.scoreHistory || []);
+      setLocalUnitName(unit.name);
+      setLocalUnitIcon(unit.icon);
+      if (unit.cardImageUrl) {
+        setBackground({ type: 'image', value: unit.cardImageUrl });
       }
-      setIsLoading(false);
-    } else {
-      router.push('/');
     }
-  }, [initialUnit, router]);
+  }, [unit]);
+
+  const handleSaveChanges = () => {
+    if (!unitRef || !unit) return;
+
+    const updatedUnitData = {
+      ...unit,
+      name: localUnitName,
+      icon: localUnitIcon,
+      cardImageUrl: background.type === 'image' ? background.value : unit.cardImageUrl,
+      members,
+      scoringCriteria,
+      scoreHistory,
+    };
+    
+    setDocumentNonBlocking(unitRef, updatedUnitData, { merge: true });
+
+    toast({
+      title: "Configurações salvas!",
+      description: "As configurações da unidade foram atualizadas.",
+    });
+    setSettingsSheetOpen(false);
+  };
 
   const handleAddMember = (newMemberData: Omit<Member, 'id' | 'score'>) => {
     const newMember: Member = {
@@ -93,7 +97,11 @@ export default function UnitPage() {
       id: new Date().getTime().toString(), // simple unique id
       score: 0,
     };
-    setMembers(prevMembers => [...prevMembers, newMember]);
+    const updatedMembers = [...members, newMember];
+    setMembers(updatedMembers);
+    if (unitRef) {
+      setDocumentNonBlocking(unitRef, { members: updatedMembers }, { merge: true });
+    }
     setAddMemberSheetOpen(false);
     toast({
       title: "Membro adicionado!",
@@ -102,7 +110,11 @@ export default function UnitPage() {
   };
   
   const handleUpdateMember = (updatedMemberData: Member) => {
-    setMembers(prevMembers => prevMembers.map(member => member.id === updatedMemberData.id ? updatedMemberData : member));
+    const updatedMembers = members.map(member => member.id === updatedMemberData.id ? updatedMemberData : member);
+    setMembers(updatedMembers);
+    if (unitRef) {
+      setDocumentNonBlocking(unitRef, { members: updatedMembers }, { merge: true });
+    }
     setEditingMember(null);
     toast({
       title: "Membro atualizado!",
@@ -112,7 +124,11 @@ export default function UnitPage() {
 
   const handleDeleteMember = (memberId: string) => {
     const memberName = members.find(m => m.id === memberId)?.name;
-    setMembers(prevMembers => prevMembers.filter(m => m.id !== memberId));
+    const updatedMembers = members.filter(m => m.id !== memberId);
+    setMembers(updatedMembers);
+    if (unitRef) {
+      setDocumentNonBlocking(unitRef, { members: updatedMembers }, { merge: true });
+    }
     setEditingMember(null);
     toast({
       title: "Membro removido.",
@@ -120,23 +136,26 @@ export default function UnitPage() {
       variant: "destructive"
     })
   };
-  
-  const handleIconChange = (iconName: string) => {
-    setUnit(prevUnit => prevUnit ? {...prevUnit, icon: iconName} : null)
-  }
 
   const handleScoresCalculated = (scoreInfo: ScoreInfo) => {
-     setMembers(prevMembers => {
-      return prevMembers.map(member => {
-        const memberScoreUpdate = scoreInfo.memberScores[member.id];
-        if (memberScoreUpdate) {
-          const newScore = (member.score || 0) + memberScoreUpdate.points;
-          return { ...member, score: newScore };
-        }
-        return member;
-      });
+    const updatedMembers = members.map(member => {
+      const memberScoreUpdate = scoreInfo.memberScores[member.id];
+      if (memberScoreUpdate) {
+        const newScore = (member.score || 0) + memberScoreUpdate.points;
+        return { ...member, score: newScore };
+      }
+      return member;
     });
-    setScoreHistory(prevHistory => [scoreInfo, ...prevHistory]);
+
+    const updatedScoreHistory = [scoreInfo, ...scoreHistory];
+    
+    setMembers(updatedMembers);
+    setScoreHistory(updatedScoreHistory);
+
+    if (unitRef) {
+      setDocumentNonBlocking(unitRef, { members: updatedMembers, scoreHistory: updatedScoreHistory }, { merge: true });
+    }
+
     setGenerateScoreDialogOpen(false);
     toast({
       title: "Pontuações atualizadas!",
@@ -169,22 +188,26 @@ export default function UnitPage() {
     if (!reportToDelete) return;
 
     // Revert scores
-    setMembers(prevMembers => {
-      return prevMembers.map(member => {
-        const memberScoreUpdate = reportToDelete.memberScores[member.id];
-        if (memberScoreUpdate) {
-          const newScore = (member.score || 0) - memberScoreUpdate.points;
-          return { ...member, score: newScore };
-        }
-        return member;
-      });
+    const updatedMembers = members.map(member => {
+      const memberScoreUpdate = reportToDelete.memberScores[member.id];
+      if (memberScoreUpdate) {
+        const newScore = (member.score || 0) - memberScoreUpdate.points;
+        return { ...member, score: newScore };
+      }
+      return member;
     });
 
-    setScoreHistory(prevHistory => prevHistory.filter(r => r.id !== reportId));
+    const updatedScoreHistory = scoreHistory.filter(r => r.id !== reportId);
+    setMembers(updatedMembers);
+    setScoreHistory(updatedScoreHistory);
+
+    if (unitRef) {
+      setDocumentNonBlocking(unitRef, { members: updatedMembers, scoreHistory: updatedScoreHistory }, { merge: true });
+    }
 
     toast({
       title: "Relatório Excluído!",
-      description: `O relatório de ${reportToDelete.date.toLocaleDateString()} foi excluído.`,
+      description: `O relatório de ${new Date(reportToDelete.date).toLocaleDateString()} foi excluído.`,
       variant: "destructive"
     });
   };
@@ -195,7 +218,7 @@ export default function UnitPage() {
       : { backgroundColor: background.value };
 
 
-  if (isLoading) {
+  if (isUnitLoading) {
     return (
       <div className="container mx-auto p-4 sm:p-8">
         <header className="flex items-center justify-between mb-8">
@@ -251,20 +274,20 @@ export default function UnitPage() {
                 <SheetHeader>
                   <SheetTitle>Configurações da Unidade</SheetTitle>
                 </SheetHeader>
-                <div className="py-4 space-y-4 overflow-y-auto pr-6">
+                <div className="py-4 space-y-4 overflow-y-auto pr-6 flex-grow">
                     <div>
                         <Label htmlFor="unit-name">Nome da Unidade</Label>
                         <Input
                             id="unit-name"
                             type="text"
                             placeholder="Nome da unidade"
-                            value={unit?.name || ''}
-                            onChange={(e) => setUnit(prevUnit => prevUnit ? {...prevUnit, name: e.target.value} : null)}
+                            value={localUnitName}
+                            onChange={(e) => setLocalUnitName(e.target.value)}
                         />
                     </div>
                      <div>
                         <Label htmlFor="unit-icon">Ícone da Unidade</Label>
-                        <Select value={unit?.icon} onValueChange={handleIconChange}>
+                        <Select value={localUnitIcon} onValueChange={setLocalUnitIcon}>
                             <SelectTrigger id="unit-icon">
                                 <SelectValue placeholder="Selecione um ícone" />
                             </SelectTrigger>
@@ -332,6 +355,9 @@ export default function UnitPage() {
                         Adicionar Item
                       </Button>
                     </div>
+                </div>
+                 <div className="mt-auto pt-4">
+                    <Button onClick={handleSaveChanges} className="w-full">Salvar Alterações</Button>
                 </div>
               </SheetContent>
             </Sheet>
@@ -444,5 +470,3 @@ export default function UnitPage() {
     </main>
   );
 }
-
-    
