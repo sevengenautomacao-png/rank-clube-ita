@@ -164,6 +164,31 @@ export default function UnitPage() {
     setScoringCriteria(newCriteria);
   };
 
+   const handleDeleteReport = (reportId: string) => {
+    const reportToDelete = scoreHistory.find(r => r.id === reportId);
+    if (!reportToDelete) return;
+
+    // Revert scores
+    setMembers(prevMembers => {
+      return prevMembers.map(member => {
+        const memberScoreUpdate = reportToDelete.memberScores[member.id];
+        if (memberScoreUpdate) {
+          const newScore = (member.score || 0) - memberScoreUpdate.points;
+          return { ...member, score: newScore };
+        }
+        return member;
+      });
+    });
+
+    setScoreHistory(prevHistory => prevHistory.filter(r => r.id !== reportId));
+
+    toast({
+      title: "Relatório Excluído!",
+      description: `O relatório de ${reportToDelete.date.toLocaleDateString()} foi excluído.`,
+      variant: "destructive"
+    });
+  };
+
   const pageStyle: React.CSSProperties =
     background.type === 'image'
       ? { backgroundImage: `url(${background.value})`, backgroundSize: 'cover', backgroundPosition: 'center' }
@@ -351,7 +376,7 @@ export default function UnitPage() {
                       </div>
                     )}
                   </CardContent>
-                  <div className="absolute top-4 right-4 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity focus-within:opacity-100">
+                  <div className="absolute top-4 right-4 opacity-100 md:group-hover:opacity-100 transition-opacity focus-within:opacity-100">
                     <Button variant="outline" size="icon" onClick={() => setEditingMember(member)}>
                       <Edit className="h-4 w-4" />
                        <span className="sr-only">Editar {member.name}</span>
@@ -381,7 +406,13 @@ export default function UnitPage() {
                 <h2 className="text-2xl font-bold mb-4 text-center">Histórico de Pontuações</h2>
                 <div className="space-y-6">
                   {scoreHistory.map((report) => (
-                      <ScoreReportCard key={report.id} report={report} members={members} scoringCriteria={scoringCriteria} />
+                      <ScoreReportCard 
+                        key={report.id} 
+                        report={report} 
+                        members={members} 
+                        scoringCriteria={scoringCriteria}
+                        onDeleteReport={handleDeleteReport}
+                      />
                   ))}
                 </div>
               </div>
@@ -413,3 +444,5 @@ export default function UnitPage() {
     </main>
   );
 }
+
+    
