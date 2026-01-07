@@ -135,7 +135,7 @@ export default function UnitPage() {
     }));
   };
 
-  const handleAddMember = (newMemberData: Omit<Member, 'id' | 'score' | 'ranking'>) => {
+  const handleAddMember = (newMemberData: Omit<Member, 'id' | 'score' | 'ranking' | 'avatarUrl'> & { avatarUrl?: string }) => {
     const newMember: Member = {
       ...newMemberData,
       id: new Date().getTime().toString(), // simple unique id
@@ -442,18 +442,18 @@ export default function UnitPage() {
         <div className="fixed inset-0 bg-cover bg-center" style={background.type === 'image' && background.value ? {backgroundImage: `url(${background.value})`} : {backgroundColor: background.value || 'transparent'}}></div>
         <div className="fixed inset-0 bg-background/80 backdrop-blur-sm"></div>
       <div className="container relative mx-auto p-4 sm:p-8 min-h-screen">
-        <header className="flex items-center justify-between mb-8">
+        <header className="flex flex-col sm:flex-row items-center justify-between mb-8 gap-4">
           <div className="flex items-center gap-4">
             <Button variant="outline" size="icon" asChild>
               <Link href="/" aria-label="Voltar para o início">
                 <ArrowLeft />
               </Link>
             </Button>
-            <h1 className="text-3xl sm:text-4xl font-bold font-headline text-primary">
+            <h1 className="text-3xl sm:text-4xl font-bold font-headline text-primary text-center sm:text-left">
               Unidade {unit?.name}
             </h1>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 w-full sm:w-auto justify-center">
             <Sheet open={isSettingsSheetOpen} onOpenChange={setSettingsSheetOpen}>
               <SheetTrigger asChild>
                 <Button variant="outline" size="icon">
@@ -711,3 +711,5 @@ export default function UnitPage() {
     </main>
   );
 }
+
+    
