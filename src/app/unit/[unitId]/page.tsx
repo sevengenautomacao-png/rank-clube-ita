@@ -104,17 +104,16 @@ export default function UnitPage() {
     setUnit(prevUnit => prevUnit ? {...prevUnit, icon: iconName} : null)
   }
 
-  const handleGenerateScore = (memberId: string) => {
-    const newScore = Math.floor(Math.random() * 101);
+  const handleGenerateAllScores = () => {
     setMembers(prevMembers => 
-      prevMembers.map(member => 
-        member.id === memberId ? { ...member, score: newScore } : member
-      )
+      prevMembers.map(member => ({
+        ...member,
+        score: Math.floor(Math.random() * 101)
+      }))
     );
-    const memberName = members.find(m => m.id === memberId)?.name;
     toast({
-      title: "Pontuação Gerada!",
-      description: `Nova pontuação para ${memberName}: ${newScore}`,
+      title: "Pontuações Geradas!",
+      description: `Novas pontuações foram geradas para todos os membros.`,
     });
   };
 
@@ -253,56 +252,60 @@ export default function UnitPage() {
         </header>
 
         {members.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {members.map(member => (
-              <Card key={member.id} className="relative group flex flex-col bg-card/80 backdrop-blur-sm">
-                <CardHeader>
-                  <div className="flex items-center gap-4">
-                    <div className="bg-primary/20 p-3 rounded-full">
-                      <User className="h-6 w-6 text-primary" />
+          <div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {members.map(member => (
+                <Card key={member.id} className="relative group flex flex-col bg-card/80 backdrop-blur-sm">
+                  <CardHeader>
+                    <div className="flex items-center gap-4">
+                      <div className="bg-primary/20 p-3 rounded-full">
+                        <User className="h-6 w-6 text-primary" />
+                      </div>
+                      <CardTitle className="text-xl">{member.name}</CardTitle>
                     </div>
-                    <CardTitle className="text-xl">{member.name}</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2 text-sm text-muted-foreground flex-grow">
+                    <p><strong className="text-foreground">Idade:</strong> {member.age}</p>
+                    <p><strong className="text-foreground">Função:</strong> {member.role}</p>
+                    <p><strong className="text-foreground">Classe:</strong> {member.className}</p>
+                    {member.score !== undefined && (
+                      <div className="flex items-center pt-2">
+                          <Star className="h-5 w-5 text-yellow-400 mr-2" />
+                          <p><strong className="text-foreground">Pontuação:</strong> {member.score}</p>
+                      </div>
+                    )}
+                  </CardContent>
+                  <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity focus-within:opacity-100">
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="destructive" size="icon" aria-label={`Remover ${member.name}`}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Essa ação não pode ser desfeita. Isso irá remover permanentemente o membro {member.name} da unidade.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => handleDeleteMember(member.id)}>
+                            Remover
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </div>
-                </CardHeader>
-                <CardContent className="space-y-2 text-sm text-muted-foreground flex-grow">
-                  <p><strong className="text-foreground">Idade:</strong> {member.age}</p>
-                  <p><strong className="text-foreground">Função:</strong> {member.role}</p>
-                  <p><strong className="text-foreground">Classe:</strong> {member.className}</p>
-                   {member.score !== undefined && (
-                    <div className="flex items-center pt-2">
-                        <Star className="h-5 w-5 text-yellow-400 mr-2" />
-                        <p><strong className="text-foreground">Pontuação:</strong> {member.score}</p>
-                    </div>
-                  )}
-                  <Button onClick={() => handleGenerateScore(member.id)} variant="secondary" className="mt-4 w-full">
-                    Gerar Pontuação
-                  </Button>
-                </CardContent>
-                <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity focus-within:opacity-100">
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="destructive" size="icon" aria-label={`Remover ${member.name}`}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Essa ação não pode ser desfeita. Isso irá remover permanentemente o membro {member.name} da unidade.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => handleDeleteMember(member.id)}>
-                          Remover
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </div>
-              </Card>
-            ))}
+                </Card>
+              ))}
+            </div>
+            <div className="mt-8 flex justify-center">
+                <Button onClick={handleGenerateAllScores} variant="secondary" size="lg">
+                    Gerar Pontuação para Todos
+                </Button>
+            </div>
           </div>
         ) : (
           <div className="text-center py-16 border-2 border-dashed rounded-lg flex flex-col items-center justify-center bg-card/50">
