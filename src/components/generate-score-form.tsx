@@ -14,6 +14,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { Textarea } from "@/components/ui/textarea";
 
 import { cn } from "@/lib/utils";
 import type { Member, ScoreInfo, ScoringCriterion } from "@/lib/types";
@@ -30,6 +31,7 @@ const generateFormSchema = (scoringCriteria: ScoringCriterion[]) => {
     date: z.date({
       required_error: "A data do evento é obrigatória.",
     }),
+    observation: z.string().optional(),
     members: membersSchema,
   });
 };
@@ -46,6 +48,7 @@ export default function GenerateScoreForm({ members, scoringCriteria, onScoresCa
 
   const defaultValues: FormSchemaType = {
     date: new Date(),
+    observation: "",
     members: members.reduce((acc, member) => {
       acc[member.id] = scoringCriteria.reduce((critAcc, criterion) => {
         critAcc[criterion.id] = criterion.id === 'present'; // Default 'presente' to true
@@ -79,7 +82,7 @@ export default function GenerateScoreForm({ members, scoringCriteria, onScoresCa
         memberScores[memberId] = { ...scoreDetails, points: totalPoints };
     }
 
-    onScoresCalculated({ id: new Date().getTime().toString(), date: values.date, memberScores });
+    onScoresCalculated({ id: new Date().getTime().toString(), date: values.date, observation: values.observation, memberScores });
     form.reset(defaultValues);
   }
 
@@ -128,6 +131,25 @@ export default function GenerateScoreForm({ members, scoringCriteria, onScoresCa
             </FormItem>
           )}
         />
+        
+        <FormField
+          control={form.control}
+          name="observation"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Observação</FormLabel>
+              <FormControl>
+                <Textarea
+                  placeholder="Adicione uma observação sobre a pontuação..."
+                  className="resize-none"
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
 
         <Separator />
 

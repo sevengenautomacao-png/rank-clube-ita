@@ -97,7 +97,14 @@ export default function ScoreReportCard({ report, members, scoringCriteria, onDe
                     </div>
                 </CardHeader>
                 <CollapsibleContent>
-                    <CardContent className="p-0">
+                    <CardContent className="p-4 pt-0">
+                        {report.observation && (
+                          <div className="mb-4 p-3 bg-muted/50 rounded-lg">
+                            <p className="text-sm text-foreground">
+                              <strong>Observação:</strong> {report.observation}
+                            </p>
+                          </div>
+                        )}
                         <Table>
                             <TableHeader>
                                 <TableRow>
