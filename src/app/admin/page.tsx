@@ -232,7 +232,7 @@ export default function AdminPage() {
                 </div>
                 <Card>
                     <CardHeader>
-                        <CardTitle>Área Administrativa</CardTitle>
+                        <CardTitle>ADM</CardTitle>
                     </CardHeader>
                     <CardContent>
                       <Form {...loginForm}>
@@ -326,7 +326,7 @@ export default function AdminPage() {
       <div className="w-full max-w-xl">
         <div className="text-center mb-12">
             <h1 className="text-4xl sm:text-5xl font-bold font-headline text-primary">
-            Área Administrativa
+            ADM
             </h1>
             <p className="text-lg text-muted-foreground mt-2">
             Gerencie as configurações do aplicativo aqui.
@@ -664,6 +664,8 @@ function RankFormDialog({ triggerButton, onSave, existingRank }: { triggerButton
     </Dialog>
   );
 }
+    
+
     
 
     
