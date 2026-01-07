@@ -39,6 +39,9 @@ import { defaultScoringCriteria } from '@/lib/data';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Label } from '@/components/ui/label';
 
+// TODO: Move this to a more secure location, like environment variables.
+const ADMIN_PASSWORD = "admin";
+
 const formSchema = z.object({
   name: z.string().min(2, { message: 'O nome deve ter pelo menos 2 caracteres.' }),
   password: z.string().optional(),
@@ -49,6 +52,8 @@ export default function AdminPage() {
   const { toast } = useToast();
   const firestore = useFirestore();
   const [editingUnit, setEditingUnit] = useState<Unit | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [passwordInput, setPasswordInput] = useState('');
 
   const unitsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -64,6 +69,16 @@ export default function AdminPage() {
       password: '',
     },
   });
+
+   const handlePasswordSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (passwordInput === ADMIN_PASSWORD) {
+      setIsAuthenticated(true);
+      toast({ title: "Acesso concedido!" });
+    } else {
+      toast({ variant: 'destructive', title: "Senha incorreta!" });
+    }
+  };
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!firestore) return;
@@ -120,6 +135,50 @@ export default function AdminPage() {
       description: `A unidade "${editingUnit.name}" foi atualizada.`,
     });
     setEditingUnit(null);
+  }
+
+  if (!isAuthenticated) {
+    return (
+        <main className="flex flex-col items-center min-h-screen p-4 sm:p-8 bg-background">
+            <header className="w-full max-w-xl flex items-start mb-8 sm:mb-12">
+                <Button variant="outline" size="icon" asChild>
+                <Link href="/" aria-label="Voltar para o início">
+                    <ArrowLeft />
+                </Link>
+                </Button>
+            </header>
+            <div className="w-full max-w-md">
+                 <div className="text-center mb-12">
+                    <h1 className="text-4xl sm:text-5xl font-bold font-headline text-primary">
+                    Acesso Restrito
+                    </h1>
+                    <p className="text-lg text-muted-foreground mt-2">
+                    Digite a senha para gerenciar o aplicativo.
+                    </p>
+                </div>
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Área Administrativa</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <form onSubmit={handlePasswordSubmit} className="space-y-4">
+                            <div>
+                                <Label htmlFor="password">Senha</Label>
+                                <Input
+                                    id="password"
+                                    type="password"
+                                    placeholder="Digite a senha"
+                                    value={passwordInput}
+                                    onChange={(e) => setPasswordInput(e.target.value)}
+                                />
+                            </div>
+                            <Button type="submit" className="w-full">Entrar</Button>
+                        </form>
+                    </CardContent>
+                </Card>
+            </div>
+        </main>
+    );
   }
 
   return (
