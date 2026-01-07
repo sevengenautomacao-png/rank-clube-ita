@@ -2,7 +2,7 @@
 "use client"
 
 import * as React from "react"
-import { Moon, Sun, MonitorSmartphone, Palette } from "lucide-react"
+import { Moon, Sun, MonitorSmartphone, Play } from "lucide-react"
 
 import { useTheme } from "@/components/theme-provider"
 import { Button } from "@/components/ui/button"
@@ -29,7 +29,7 @@ export function ThemeSwitcher() {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="outline">
-          <Palette className="mr-2 h-[1.2rem] w-[1.2rem]" />
+          <Play className="mr-2 h-[1.2rem] w-[1.2rem]" />
           Selecionar modo de jogo
         </Button>
       </DropdownMenuTrigger>
