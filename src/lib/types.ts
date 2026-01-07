@@ -17,6 +17,7 @@ export type Member = {
 export type Unit = {
   id:string;
   name: string;
+  password?: string;
   members: Member[];
   cardImageUrl?: string;
   cardColor?: string;
@@ -35,6 +36,6 @@ export type ScoreInfo = {
   id: string;
   date: Date;
   memberScores: {
-    [memberId: string]: MemberScore;
+    [memberId:string]: MemberScore;
   }
 }

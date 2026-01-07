@@ -46,6 +46,9 @@ export default function UnitPage() {
 
   const { data: unit, isLoading: isUnitLoading } = useDoc<Unit>(unitRef);
 
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [passwordInput, setPasswordInput] = useState('');
+
   const [members, setMembers] = useState<Member[]>([]);
   const [scoringCriteria, setScoringCriteria] = useState<ScoringCriterion[]>([]);
   const [scoreHistory, setScoreHistory] = useState<ScoreInfo[]>([]);
@@ -57,14 +60,20 @@ export default function UnitPage() {
   const [background, setBackground] = useState({ type: 'color', value: '#111827' }); // dark gray default
   const [localUnitName, setLocalUnitName] = useState("");
   const [localUnitIcon, setLocalUnitIcon] = useState("");
+  const [localUnitPassword, setLocalUnitPassword] = useState("");
 
   useEffect(() => {
     if (unit) {
+      // If the unit has no password, or if the user is already authenticated, show the page
+      if (!unit.password) {
+        setIsAuthenticated(true);
+      }
       setMembers(unit.members?.map(m => ({ ...m, score: m.score ?? 0 })) || []);
       setScoringCriteria(unit.scoringCriteria || []);
       setScoreHistory(unit.scoreHistory?.map(sh => ({...sh, date: (sh.date as any).toDate()})) || []);
       setLocalUnitName(unit.name);
       setLocalUnitIcon(unit.icon);
+      setLocalUnitPassword(unit.password || '');
       if (unit.cardImageUrl) {
         setBackground({ type: 'image', value: unit.cardImageUrl });
       } else if (unit.cardColor) {
@@ -75,12 +84,23 @@ export default function UnitPage() {
     }
   }, [unit]);
 
+  const handlePasswordSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (unit && passwordInput === unit.password) {
+      setIsAuthenticated(true);
+      toast({ title: "Acesso concedido!" });
+    } else {
+      toast({ variant: 'destructive', title: "Senha incorreta!" });
+    }
+  };
+
   const handleSaveChanges = () => {
     if (!unitRef || !unit) return;
 
     const updatedUnitData: Partial<Unit> = {
       name: localUnitName,
       icon: localUnitIcon,
+      password: localUnitPassword,
       cardImageUrl: background.type === 'image' ? background.value : "",
       cardColor: background.type === 'color' ? background.value : "",
       scoringCriteria,
@@ -350,6 +370,43 @@ export default function UnitPage() {
     );
   }
 
+  if (!isAuthenticated) {
+    return (
+      <main className="flex items-center justify-center min-h-screen" style={pageStyle}>
+        <div className="container mx-auto p-4 sm:p-8 bg-background/80 backdrop-blur-sm rounded-lg max-w-md">
+            <header className="flex items-center gap-4 mb-8">
+                <Button variant="outline" size="icon" asChild>
+                    <Link href="/" aria-label="Voltar para o início">
+                        <ArrowLeft />
+                    </Link>
+                </Button>
+                <h1 className="text-2xl font-bold">Acesso à Unidade</h1>
+            </header>
+            <Card>
+                <CardHeader>
+                    <CardTitle>Unidade "{unit?.name}" é protegida por senha</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <form onSubmit={handlePasswordSubmit} className="space-y-4">
+                        <div>
+                            <Label htmlFor="password">Senha</Label>
+                            <Input
+                                id="password"
+                                type="password"
+                                placeholder="Digite a senha"
+                                value={passwordInput}
+                                onChange={(e) => setPasswordInput(e.target.value)}
+                            />
+                        </div>
+                        <Button type="submit" className="w-full">Entrar</Button>
+                    </form>
+                </CardContent>
+            </Card>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="min-h-screen" style={pageStyle}>
       <div className="container mx-auto p-4 sm:p-8 bg-background/80 backdrop-blur-sm min-h-screen">
@@ -406,6 +463,16 @@ export default function UnitPage() {
                                 })}
                             </SelectContent>
                         </Select>
+                    </div>
+                    <div>
+                        <Label htmlFor="unit-password">Senha da Unidade</Label>
+                        <Input
+                            id="unit-password"
+                            type="password"
+                            placeholder="Defina uma nova senha"
+                            value={localUnitPassword}
+                            onChange={(e) => setLocalUnitPassword(e.target.value)}
+                        />
                     </div>
                     <div>
                         <Label htmlFor="bg-color">Cor de Fundo</Label>

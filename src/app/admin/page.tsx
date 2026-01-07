@@ -39,6 +39,7 @@ import { defaultScoringCriteria } from '@/lib/data';
 
 const formSchema = z.object({
   name: z.string().min(2, { message: 'O nome deve ter pelo menos 2 caracteres.' }),
+  password: z.string().optional(),
 });
 
 export default function AdminPage() {
@@ -57,6 +58,7 @@ export default function AdminPage() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: '',
+      password: '',
     },
   });
 
@@ -75,6 +77,7 @@ export default function AdminPage() {
 
     const newUnit: Omit<Unit, 'id'> = {
       name: values.name,
+      password: values.password,
       members: [],
       icon: 'Shield', // Default icon
       scoringCriteria: defaultScoringCriteria
@@ -143,6 +146,19 @@ export default function AdminPage() {
                         <FormLabel>Nome da Unidade</FormLabel>
                         <FormControl>
                           <Input placeholder="Ex: Monte Sinai" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="password"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Senha de Acesso (Opcional)</FormLabel>
+                        <FormControl>
+                          <Input type="password" placeholder="Senha para a unidade" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
