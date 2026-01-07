@@ -50,8 +50,7 @@ service cloud.firestore {
      *   allows for public discoverability while preparing for a secure ownership model.
      */
     match /units/{unitId} {
-      allow get: if true;
-      allow list: if true;
+      allow read: if true;
 
       // CRITICAL: The 'Unit' entity is missing an 'ownerId' or 'authorId' field.
       // Write operations are disabled to prevent unauthorized data creation.
@@ -82,8 +81,7 @@ service cloud.firestore {
        *   Validates relational integrity between the member and its parent unit.
        */
       match /members/{memberId} {
-        allow get: if true;
-        allow list: if true;
+        allow read: if true;
 
         // CRITICAL: Cannot determine who owns the parent unit to allow member creation.
         // TODO: Add an 'ownerId' field to the parent 'Unit' document.
