@@ -65,6 +65,8 @@ export default function UnitPage() {
       setLocalUnitIcon(unit.icon);
       if (unit.cardImageUrl) {
         setBackground({ type: 'image', value: unit.cardImageUrl });
+      } else {
+        setBackground({ type: 'color', value: '#111827' });
       }
     }
   }, [unit]);
@@ -76,7 +78,7 @@ export default function UnitPage() {
       ...unit,
       name: localUnitName,
       icon: localUnitIcon,
-      cardImageUrl: background.type === 'image' ? background.value : unit.cardImageUrl,
+      cardImageUrl: background.type === 'image' ? background.value : (unit.cardImageUrl || ''),
       members,
       scoringCriteria,
       scoreHistory,
