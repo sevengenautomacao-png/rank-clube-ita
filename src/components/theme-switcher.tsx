@@ -30,7 +30,7 @@ export function ThemeSwitcher() {
       <DropdownMenuTrigger asChild>
         <Button variant="outline">
           <Play className="mr-2 h-[1.2rem] w-[1.2rem]" />
-          Selecionar modo de jogo
+          Modo
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="center">
