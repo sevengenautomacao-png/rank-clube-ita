@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -39,16 +39,18 @@ export default function ScoreReportCard({ report, members, scoringCriteria, onDe
     };
 
     const getReportDate = () => {
+        if (!report.date) return new Date();
         if (report.date instanceof Date) {
             return report.date;
         }
-        if (report.date && typeof (report.date as any).toDate === 'function') {
+        if (typeof (report.date as any).toDate === 'function') {
             return (report.date as any).toDate();
         }
         return new Date(report.date); 
     }
 
     const displayDate = getReportDate();
+
 
     return (
         <Collapsible open={isOpen} onOpenChange={setIsOpen}>
@@ -109,8 +111,8 @@ export default function ScoreReportCard({ report, members, scoringCriteria, onDe
                             </TableHeader>
                             <TableBody>
                                 {Object.entries(report.memberScores).map(([memberId, scores]) => (
-                                    <>
-                                        <TableRow key={memberId}>
+                                    <React.Fragment key={memberId}>
+                                        <TableRow>
                                             <TableCell className="font-medium">{getMemberName(memberId)}</TableCell>
                                             {scoringCriteria.map(c => {
                                                 const wasScored = scores[c.id];
@@ -134,7 +136,7 @@ export default function ScoreReportCard({ report, members, scoringCriteria, onDe
                                                 </TableCell>
                                             </TableRow>
                                         )}
-                                    </>
+                                    </React.Fragment>
                                 ))}
                             </TableBody>
                         </Table>
