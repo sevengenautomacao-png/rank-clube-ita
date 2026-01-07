@@ -54,10 +54,10 @@ export default function Home() {
             const Icon = iconMap[unit.icon] || Shield;
             return (
               <Link href={`/unit/${unit.id}`} key={unit.id} className="transform transition-transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-ring rounded-lg">
-                <Card className={cn(
-                  "aspect-square flex flex-col justify-end p-4 hover:border-primary border-2 border-transparent transition-colors duration-300 relative overflow-hidden",
-                  unit.cardColor
-                )}>
+                <Card 
+                    className="aspect-square flex flex-col justify-end p-4 hover:border-primary border-2 border-transparent transition-colors duration-300 relative overflow-hidden"
+                    style={{ backgroundColor: unit.cardColor && !unit.cardImageUrl ? unit.cardColor : undefined }}
+                >
                   {unit.cardImageUrl && (
                     <Image
                       src={unit.cardImageUrl}

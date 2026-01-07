@@ -57,7 +57,7 @@ export default function UnitPage() {
   const [isSettingsSheetOpen, setSettingsSheetOpen] = useState(false);
   const [isGenerateScoreDialogOpen, setGenerateScoreDialogOpen] = useState(false);
   const [editingReport, setEditingReport] = useState<ScoreInfo | null>(null);
-  const [background, setBackground] = useState({ type: 'color', value: '#111827' }); // dark gray default
+  const [background, setBackground] = useState({ type: 'color', value: '' });
   const [localUnitName, setLocalUnitName] = useState("");
   const [localUnitIcon, setLocalUnitIcon] = useState("Shield");
   const [localUnitPassword, setLocalUnitPassword] = useState("");
@@ -82,7 +82,7 @@ export default function UnitPage() {
       } else if (unit.cardColor) {
         setBackground({ type: 'color', value: unit.cardColor });
       } else {
-        setBackground({ type: 'color', value: '#111827' });
+        setBackground({ type: 'color', value: '' });
       }
     }
   }, [unit]);
@@ -327,9 +327,9 @@ export default function UnitPage() {
   };
 
   const pageStyle: React.CSSProperties =
-    background.type === 'image'
-      ? { backgroundImage: `url(${background.value})`, backgroundSize: 'cover', backgroundPosition: 'center' }
-      : { backgroundColor: background.value };
+    background.type === 'image' && background.value
+      ? { backgroundImage: `url(${background.value})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed' }
+      : { backgroundColor: background.value || 'transparent' };
 
 
   if (isUnitLoading) {
@@ -379,8 +379,8 @@ export default function UnitPage() {
 
   if (!isAuthenticated) {
     return (
-      <main className="flex items-center justify-center min-h-screen" style={pageStyle}>
-        <div className="container mx-auto p-4 sm:p-8 bg-background/80 backdrop-blur-sm rounded-lg max-w-md">
+      <main className="flex items-center justify-center min-h-screen bg-background/80 backdrop-blur-sm" style={pageStyle}>
+        <div className="container mx-auto p-4 sm:p-8 bg-card/90 backdrop-blur-sm rounded-lg max-w-md border">
             <header className="flex items-center gap-4 mb-8">
                 <Button variant="outline" size="icon" asChild>
                     <Link href="/" aria-label="Voltar para o início">
@@ -416,7 +416,7 @@ export default function UnitPage() {
 
   return (
     <main className="min-h-screen" style={pageStyle}>
-      <div className="container mx-auto p-4 sm:p-8 bg-background/80 backdrop-blur-sm min-h-screen">
+      <div className="container mx-auto p-4 sm:p-8 bg-background/80 backdrop-blur-sm min-h-screen rounded-lg border">
         <header className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
             <Button variant="outline" size="icon" asChild>
