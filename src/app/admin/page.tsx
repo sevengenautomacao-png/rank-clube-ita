@@ -32,10 +32,12 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase';
+import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking, setDocumentNonBlocking } from '@/firebase';
 import { collection, query, doc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { defaultScoringCriteria } from '@/lib/data';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { Label } from '@/components/ui/label';
 
 const formSchema = z.object({
   name: z.string().min(2, { message: 'O nome deve ter pelo menos 2 caracteres.' }),
@@ -46,6 +48,7 @@ export default function AdminPage() {
   const router = useRouter();
   const { toast } = useToast();
   const firestore = useFirestore();
+  const [editingUnit, setEditingUnit] = useState<Unit | null>(null);
 
   const unitsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -77,7 +80,7 @@ export default function AdminPage() {
 
     const newUnit: Omit<Unit, 'id'> = {
       name: values.name,
-      password: values.password,
+      password: values.password || "",
       members: [],
       icon: 'Shield', // Default icon
       scoringCriteria: defaultScoringCriteria
@@ -106,6 +109,17 @@ export default function AdminPage() {
         description: `A unidade "${unitToDelete.name}" foi excluída.`,
         variant: "destructive"
     });
+  }
+
+  function handleUpdateUnit(values: Partial<Unit>) {
+    if (!firestore || !editingUnit) return;
+    const unitRef = doc(firestore, 'units', editingUnit.id);
+    setDocumentNonBlocking(unitRef, values, { merge: true });
+    toast({
+      title: "Unidade Atualizada",
+      description: `A unidade "${editingUnit.name}" foi atualizada.`,
+    });
+    setEditingUnit(null);
   }
 
   return (
@@ -158,7 +172,7 @@ export default function AdminPage() {
                       <FormItem>
                         <FormLabel>Senha de Acesso (Opcional)</FormLabel>
                         <FormControl>
-                          <Input type="password" placeholder="Senha para a unidade" {...field} />
+                          <Input type="password" placeholder="Senha para a unidade" {...field} value={field.value ?? ''}/>
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -185,13 +199,11 @@ export default function AdminPage() {
                     <ul className="space-y-4">
                         {units.map(unit => (
                             <li key={unit.id} className="flex items-center justify-between p-3 bg-card rounded-lg border">
-                                <span className="font-medium">{unit.name}</span>
+                                <Link href={`/unit/${unit.id}`} className="font-medium hover:underline">{unit.name}</Link>
                                 <div className="flex items-center gap-2">
-                                    <Button variant="outline" size="icon" asChild>
-                                        <Link href={`/unit/${unit.id}`}>
-                                            <Edit />
-                                            <span className="sr-only">Editar {unit.name}</span>
-                                        </Link>
+                                    <Button variant="outline" size="icon" onClick={() => setEditingUnit(unit)}>
+                                        <Edit />
+                                        <span className="sr-only">Editar {unit.name}</span>
                                     </Button>
                                     <AlertDialog>
                                         <AlertDialogTrigger asChild>
@@ -226,6 +238,74 @@ export default function AdminPage() {
           </Card>
         </div>
       </div>
+      <Sheet open={!!editingUnit} onOpenChange={(isOpen) => !isOpen && setEditingUnit(null)}>
+        <SheetContent>
+          <SheetHeader>
+            <SheetTitle>Editar Unidade: {editingUnit?.name}</SheetTitle>
+          </SheetHeader>
+          {editingUnit && <EditUnitForm unit={editingUnit} onUpdate={handleUpdateUnit} />}
+        </SheetContent>
+      </Sheet>
     </main>
   );
+}
+
+
+const editFormSchema = z.object({
+  name: z.string().min(2, { message: 'O nome deve ter pelo menos 2 caracteres.' }),
+  password: z.string().optional(),
+});
+
+
+function EditUnitForm({ unit, onUpdate }: { unit: Unit, onUpdate: (values: Partial<Unit>) => void }) {
+  const form = useForm<z.infer<typeof editFormSchema>>({
+    resolver: zodResolver(editFormSchema),
+    defaultValues: {
+      name: unit.name,
+      password: unit.password || '',
+    },
+  });
+
+  const handleSubmit = (values: z.infer<typeof editFormSchema>) => {
+    onUpdate({
+        name: values.name,
+        password: values.password
+    });
+  };
+
+  return (
+    <Form {...form}>
+        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6 text-left mt-6">
+            <FormField
+            control={form.control}
+            name="name"
+            render={({ field }) => (
+                <FormItem>
+                <FormLabel>Nome da Unidade</FormLabel>
+                <FormControl>
+                    <Input {...field} />
+                </FormControl>
+                <FormMessage />
+                </FormItem>
+            )}
+            />
+            <FormField
+            control={form.control}
+            name="password"
+            render={({ field }) => (
+                <FormItem>
+                <FormLabel>Senha de Acesso</FormLabel>
+                <FormControl>
+                    <Input type="password" {...field} value={field.value ?? ''} />
+                </FormControl>
+                <FormMessage />
+                </FormItem>
+            )}
+            />
+            <Button type="submit" className="w-full">
+            Salvar Alterações
+            </Button>
+        </form>
+    </Form>
+  )
 }

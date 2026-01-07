@@ -59,20 +59,23 @@ export default function UnitPage() {
   const [editingReport, setEditingReport] = useState<ScoreInfo | null>(null);
   const [background, setBackground] = useState({ type: 'color', value: '#111827' }); // dark gray default
   const [localUnitName, setLocalUnitName] = useState("");
-  const [localUnitIcon, setLocalUnitIcon] = useState("");
+  const [localUnitIcon, setLocalUnitIcon] = useState("Shield");
   const [localUnitPassword, setLocalUnitPassword] = useState("");
 
   useEffect(() => {
     if (unit) {
-      // If the unit has no password, or if the user is already authenticated, show the page
       if (!unit.password) {
         setIsAuthenticated(true);
       }
       setMembers(unit.members?.map(m => ({ ...m, score: m.score ?? 0 })) || []);
       setScoringCriteria(unit.scoringCriteria || []);
-      setScoreHistory(unit.scoreHistory?.map(sh => ({...sh, date: (sh.date as any).toDate()})) || []);
+      const history = (unit.scoreHistory || []).map(sh => {
+        const date = sh.date && (sh.date as any).toDate ? (sh.date as any).toDate() : new Date(sh.date);
+        return { ...sh, date };
+      });
+      setScoreHistory(history);
       setLocalUnitName(unit.name);
-      setLocalUnitIcon(unit.icon);
+      setLocalUnitIcon(unit.icon || "Shield");
       setLocalUnitPassword(unit.password || '');
       if (unit.cardImageUrl) {
         setBackground({ type: 'image', value: unit.cardImageUrl });
@@ -172,10 +175,8 @@ export default function UnitPage() {
     let updatedScoreHistory = [...scoreHistory];
 
     if (editingReport) {
-      // Logic for UPDATING a report
       const originalReport = scoreHistory.find(r => r.id === editingReport.id);
 
-      // 1. Revert the old scores from the original report
       if (originalReport) {
         updatedMembers = members.map(member => {
           const originalMemberScore = originalReport.memberScores[member.id];
@@ -186,7 +187,6 @@ export default function UnitPage() {
         });
       }
 
-      // 2. Apply the new scores from the updated report (scoreInfo)
       updatedMembers = updatedMembers.map(member => {
         const newMemberScore = scoreInfo.memberScores[member.id];
         if (newMemberScore) {
@@ -195,7 +195,6 @@ export default function UnitPage() {
         return member;
       });
 
-      // 3. Replace the old report with the new one in history
       updatedScoreHistory = scoreHistory.map(r => r.id === scoreInfo.id ? scoreInfo : r);
       
       toast({
@@ -204,7 +203,6 @@ export default function UnitPage() {
       });
 
     } else {
-      // Logic for ADDING a new report
       updatedMembers = members.map(member => {
         const memberScoreUpdate = scoreInfo.memberScores[member.id];
         if (memberScoreUpdate) {
@@ -257,7 +255,6 @@ export default function UnitPage() {
     const reportToDelete = scoreHistory.find(r => r.id === reportId);
     if (!reportToDelete) return;
 
-    // Revert scores
     const updatedMembers = members.map(member => {
       const memberScoreUpdate = reportToDelete.memberScores[member.id];
       if (memberScoreUpdate) {
@@ -284,7 +281,6 @@ export default function UnitPage() {
   };
 
   const handleExportToExcel = () => {
-    // 1. Ranking Geral sheet
     const rankingData = members
         .sort((a, b) => b.score - a.score)
         .map((member, index) => ({
@@ -297,7 +293,6 @@ export default function UnitPage() {
         }));
     const rankingWorksheet = XLSX.utils.json_to_sheet(rankingData);
     
-    // 2. Histórico de Pontuação sheet
     const historyData: any[] = [];
     scoreHistory.forEach(report => {
         const date = report.date instanceof Date ? report.date.toLocaleDateString('pt-BR') : new Date(report.date).toLocaleDateString('pt-BR');
@@ -319,12 +314,10 @@ export default function UnitPage() {
     });
     const historyWorksheet = XLSX.utils.json_to_sheet(historyData);
 
-    // Create workbook and add sheets
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, rankingWorksheet, 'Ranking Geral');
     XLSX.utils.book_append_sheet(workbook, historyWorksheet, 'Histórico de Pontuação');
 
-    // Download the file
     XLSX.writeFile(workbook, `Relatorio_${unit?.name.replace(/ /g, '_')}_${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.xlsx`);
 
     toast({
@@ -368,6 +361,20 @@ export default function UnitPage() {
         </div>
       </div>
     );
+  }
+
+  if (!unit) {
+    return (
+        <main className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <h1 className="text-4xl font-bold text-destructive">Unidade não encontrada</h1>
+            <p className="text-lg text-muted-foreground mt-2">A unidade que você está procurando não existe.</p>
+            <Button asChild className="mt-6">
+              <Link href="/">Voltar para o início</Link>
+            </Button>
+          </div>
+        </main>
+      );
   }
 
   if (!isAuthenticated) {
@@ -469,7 +476,7 @@ export default function UnitPage() {
                         <Input
                             id="unit-password"
                             type="password"
-                            placeholder="Defina uma nova senha"
+                            placeholder="Deixe em branco para remover a senha"
                             value={localUnitPassword}
                             onChange={(e) => setLocalUnitPassword(e.target.value)}
                         />
