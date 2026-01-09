@@ -20,7 +20,7 @@
  *   critical security measure to prevent unauthorized data modification until the application schema
  *   is updated.
  * - Actionable TODOs for Developers: Placeholder rules and comments have been added to guide
- *   the developer on how to enable writes securely once an ownership field (e.g., `ownerId`) is
+ *   the developer on how to enable writes securely once an ownership field (e.g., 'ownerId') is
  *   added to the 'Unit' entity.
  *
  * Denormalization for Authorization:
@@ -37,6 +37,20 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    /**
+     * @description
+     *   Rules for the 'settings' collection. Documents here contain public app configuration.
+     *   Read access is public to allow clients to fetch settings like the app icon.
+     * @path /settings/{settingId}
+     * @allow (read) Any user, signed in or not, can read app settings.
+     * @deny (write) No user can write to the settings directly from the client. This should be managed by an admin.
+     */
+    match /settings/{settingId} {
+      allow read: if true;
+      allow write: if false; // Writes should be handled by authenticated admins via a secure backend/admin panel.
+    }
+
 
     /**
      * @description
