@@ -34,7 +34,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useCollection, useDoc, useFirestore, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking, setDocumentNonBlocking, useAuth } from '@/firebase';
 import { collection, query, doc } from 'firebase/firestore';
-import { signInWithEmailAndPassword, signOut, setPersistence, browserLocalPersistence, browserSessionPersistence } from 'firebase/auth';
+import { signInWithEmailAndPassword, signOut, setPersistence, browserLocalPersistence, browserSessionPersistence, type AuthError } from 'firebase/auth';
 import { Skeleton } from '@/components/ui/skeleton';
 import { defaultScoringCriteria, defaultRanks } from '@/lib/data';
 import { getRanks } from '@/lib/ranks';
@@ -144,8 +144,13 @@ export default function AdminPage() {
       setIsAuthenticated(true);
       toast({ title: "Acesso concedido!" });
     } catch (error) {
-      console.error("Authentication error:", error);
-      toast({ variant: 'destructive', title: "Erro de autenticação!", description: "Email ou senha incorretos." });
+      const authError = error as AuthError;
+      if (authError.code === 'auth/invalid-credential') {
+        toast({ variant: 'destructive', title: "Erro de autenticação!", description: "Email ou senha incorretos. Por favor, tente novamente." });
+      } else {
+        console.error("Authentication error:", error);
+        toast({ variant: 'destructive', title: "Erro de autenticação!", description: "Ocorreu um erro inesperado. Verifique o console para mais detalhes." });
+      }
     } finally {
         setIsAuthLoading(false);
     }
@@ -733,3 +738,4 @@ function RankFormDialog({ triggerButton, onSave, existingRank }: { triggerButton
     
 
     
+
