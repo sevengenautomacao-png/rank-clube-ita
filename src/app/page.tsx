@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -32,6 +32,8 @@ export default function Home() {
     select: '*, members(*)'
   });
 
+  const [displayLimit, setDisplayLimit] = useState(5);
+
   const topMembers = useMemo(() => {
     if (!units) return [];
     
@@ -50,14 +52,7 @@ export default function Home() {
         .filter(member => typeof member.score === 'number')
         .sort((a, b) => (b.score || 0) - (a.score || 0));
 
-    if (sortedMembers.length <= 5) {
-        return sortedMembers;
-    }
-
-    const fifthScore = sortedMembers[4].score;
-    const topMembersList = sortedMembers.filter(member => member.score >= fifthScore);
-
-    return topMembersList;
+    return sortedMembers;
 
   }, [units]);
 
@@ -145,7 +140,7 @@ export default function Home() {
               </CardHeader>
               <CardContent>
                 <ul className="space-y-4">
-                  {topMembers.map((member, index) => {
+                  {topMembers.slice(0, displayLimit).map((member, index) => {
                     const PatentIcon = member.patent?.Icon;
                     const isRetro = fontClassName === 'font-retro';
                     return (
@@ -191,6 +186,17 @@ export default function Home() {
                     )
                   })}
                 </ul>
+                {topMembers.length > displayLimit && (
+                  <div className="mt-6 flex justify-center">
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setDisplayLimit(prev => prev + 10)}
+                      className="w-full sm:w-auto"
+                    >
+                      Carregar Mais
+                    </Button>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </section>
