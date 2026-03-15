@@ -44,6 +44,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/co
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 
 const formSchema = z.object({
@@ -548,386 +549,389 @@ export default function AdminPage() {
             <span className="sr-only">Sair</span>
         </Button>
       </header>
-      <div className="w-full max-w-xl">
-        <div className="text-center mb-12">
+      <div className="w-full max-w-xl pb-32">
+        <div className="text-center mb-8">
             <h1 className="text-4xl sm:text-5xl font-bold font-headline text-primary">
             ADM
             </h1>
             <p className="text-lg text-muted-foreground mt-2">
-            Gerencie as configurações do aplicativo aqui.
+            Gerencie o aplicativo.
             </p>
-            <div className="flex flex-col sm:flex-row justify-center mt-6 gap-4">
-                <Button onClick={handleGlobalExport} variant="secondary" className="flex items-center gap-2">
-                    <Download className="h-4 w-4" />
-                    Gerar Relatório Geral (Global)
-                </Button>
-                <Button onClick={handleSyncClassesByAge} variant="outline" className="flex items-center gap-2 border-primary/50 text-primary hover:bg-primary/10">
-                    <Star className="h-4 w-4" />
-                    Sincronizar Classes por Idade (Automático)
-                </Button>
-            </div>
         </div>
 
-        <div className="space-y-10">
-        <Card>
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                <ImageIcon />
-                Ícone do Aplicativo
-                </CardTitle>
-            </CardHeader>
-            <CardContent>
-                <Form {...appSettingsForm}>
-                <form onSubmit={appSettingsForm.handleSubmit(handleSaveAppSettings)} className="space-y-6 text-left">
-                    <FormField
-                    control={appSettingsForm.control}
-                    name="appIconUrl"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>URL do Ícone do App</FormLabel>
-                        <FormControl>
-                            <Input placeholder="https://exemplo.com/icone.png" {...field} />
-                        </FormControl>
-                        <p className="text-xs text-muted-foreground mt-1">Este ícone será usado quando o app for instalado (PWA). Use uma imagem PNG 192x192 ou 512x512.</p>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                    />
-                    <Button type="submit" className="w-full">
-                        Salvar Ícone do App
+        <Tabs defaultValue="geral" className="w-full">
+            <TabsList className="grid w-full grid-cols-3 mb-8">
+                <TabsTrigger value="geral">Geral</TabsTrigger>
+                <TabsTrigger value="unidades">Unidades</TabsTrigger>
+                <TabsTrigger value="config">Definições</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="geral" className="space-y-8">
+                <div className="flex flex-col sm:flex-row justify-center gap-4">
+                    <Button onClick={handleGlobalExport} variant="secondary" className="flex items-center gap-2">
+                        <Download className="h-4 w-4" />
+                        Gerar Relatório Geral (Global)
                     </Button>
-                </form>
-                </Form>
-            </CardContent>
-        </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Plus />
-                Criar Nova Unidade
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 text-left">
-                  <FormField
-                    control={form.control}
-                    name="name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Nome da Unidade</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Ex: Monte Sinai" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="password"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Senha de Acesso (Opcional)</FormLabel>
-                        <FormControl>
-                          <Input type="text" placeholder="Senha para a unidade" {...field} value={field.value ?? ''}/>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <Button type="submit" className="w-full">
-                    Criar Unidade
-                  </Button>
-                </form>
-              </Form>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Star />
-                  Gerenciar Patentes
+                    <Button onClick={handleSyncClassesByAge} variant="outline" className="flex items-center gap-2 border-primary/50 text-primary hover:bg-primary/10">
+                        <Star className="h-4 w-4" />
+                        Sincronizar Classes por Idade
+                    </Button>
                 </div>
-                <RankFormDialog 
-                  triggerButton={<Button variant="outline"><Plus className="mr-2 h-4 w-4" /> Adicionar Patente</Button>}
-                  onSave={(newRank) => {
-                    const updatedRanks = [...(managedRanks || []), newRank].sort((a,b)=> a.score - b.score);
-                    setManagedRanks(updatedRanks);
-                  }}
-                />
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {managedRanks === null && <Skeleton className="h-20 w-full" />}
-              {managedRanks && managedRanks.map(rank => (
-                <div key={rank.name} className="flex items-center gap-4 p-2 border rounded-lg">
-                  <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center">
-                    {rank.iconUrl ? (
-                      <img src={rank.iconUrl} alt={rank.name} className="h-6 w-6 object-contain" />
-                    ) : (
-                      <Star className="h-6 w-6 text-muted-foreground" />
-                    )}
-                  </div>
-                  <div className="flex-grow">
-                    <p className="font-semibold">{rank.name}</p>
-                    <p className="text-sm text-muted-foreground">Pontos: {rank.score}</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <RankFormDialog 
-                       triggerButton={<Button variant="ghost" size="icon"><Edit className="h-4 w-4" /></Button>}
-                       onSave={(updatedRank) => {
-                          const updatedRanks = managedRanks.map(r => r.name === rank.name ? {...r, ...updatedRank} : r).sort((a,b) => a.score - b.score);
-                          setManagedRanks(updatedRanks);
-                       }}
-                       existingRank={rank}
-                    />
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Excluir Patente?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Tem certeza que deseja excluir a patente "{rank.name}"? Esta ação não pode ser desfeita.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => {
-                            const updatedRanks = managedRanks.filter(r => r.name !== rank.name);
+
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                        <ImageIcon />
+                        Ícone do Aplicativo
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <Form {...appSettingsForm}>
+                        <form onSubmit={appSettingsForm.handleSubmit(handleSaveAppSettings)} className="space-y-6 text-left">
+                            <FormField
+                            control={appSettingsForm.control}
+                            name="appIconUrl"
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>URL do Ícone do App</FormLabel>
+                                <FormControl>
+                                    <Input placeholder="https://exemplo.com/icone.png" {...field} />
+                                </FormControl>
+                                <p className="text-xs text-muted-foreground mt-1">Este ícone será usado quando o app for instalado (PWA). Use uma imagem PNG 192x192 ou 512x512.</p>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                            />
+                            <Button type="submit" className="w-full">
+                                Salvar Ícone do App
+                            </Button>
+                        </form>
+                        </Form>
+                    </CardContent>
+                </Card>
+            </TabsContent>
+
+            <TabsContent value="unidades" className="space-y-8">
+                <Card>
+                    <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <Plus />
+                        Criar Nova Unidade
+                    </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                    <Form {...form}>
+                        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 text-left">
+                        <FormField
+                            control={form.control}
+                            name="name"
+                            render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Nome da Unidade</FormLabel>
+                                <FormControl>
+                                <Input placeholder="Ex: Monte Sinai" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="password"
+                            render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Senha de Acesso (Opcional)</FormLabel>
+                                <FormControl>
+                                <Input type="text" placeholder="Senha para a unidade" {...field} value={field.value ?? ''}/>
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                            )}
+                        />
+                        <Button type="submit" className="w-full">
+                            Criar Unidade
+                        </Button>
+                        </form>
+                    </Form>
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader>
+                    <CardTitle>Unidades Existentes</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        {isLoading && <div className="space-y-2">
+                        <Skeleton className="h-10 w-full" />
+                        <Skeleton className="h-10 w-full" />
+                        </div> }
+                        {units && units.length > 0 ? (
+                            <ul className="space-y-4">
+                                {units.map(unit => (
+                                    <li key={unit.id} className="flex items-center justify-between p-3 bg-card rounded-lg border">
+                                        <Link href={`/unit/${unit.id}`} className="font-medium hover:underline">{unit.name}</Link>
+                                        <div className="flex items-center gap-2">
+                                            <Sheet open={editingUnit?.id === unit.id} onOpenChange={(isOpen) => !isOpen && setEditingUnit(null)}>
+                                                <SheetTrigger asChild>
+                                                <Button variant="outline" size="icon" onClick={() => setEditingUnit(unit)}>
+                                                    <Edit />
+                                                    <span className="sr-only">Editar {unit.name}</span>
+                                                </Button>
+                                                </SheetTrigger>
+                                                <SheetContent>
+                                                <SheetHeader>
+                                                    <SheetTitle>Editar Unidade: {editingUnit?.name}</SheetTitle>
+                                                </SheetHeader>
+                                                {editingUnit && <EditUnitForm unit={editingUnit} onUpdate={handleUpdateUnit} />}
+                                                </SheetContent>
+                                            </Sheet>
+                                            <AlertDialog>
+                                                <AlertDialogTrigger asChild>
+                                                    <Button variant="destructive" size="icon">
+                                                        <Trash2 />
+                                                        <span className="sr-only">Excluir {unit.name}</span>
+                                                    </Button>
+                                                </AlertDialogTrigger>
+                                                <AlertDialogContent>
+                                                    <AlertDialogHeader>
+                                                        <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                                                        <AlertDialogDescription>
+                                                            Essa ação não pode ser desfeita. Isso irá excluir permanentemente a unidade "{unit.name}".
+                                                        </AlertDialogDescription>
+                                                    </AlertDialogHeader>
+                                                    <AlertDialogFooter>
+                                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                        <AlertDialogAction onClick={() => handleDeleteUnit(unit.id)}>
+                                                            Excluir
+                                                        </AlertDialogAction>
+                                                    </AlertDialogFooter>
+                                                </AlertDialogContent>
+                                            </AlertDialog>
+                                        </div>
+                                    </li>
+                                ))}
+                            </ul>
+                        ) : (
+                        !isLoading && <p className="text-muted-foreground text-center">Nenhuma unidade criada ainda.</p>
+                        )}
+                    </CardContent>
+                </Card>
+            </TabsContent>
+
+            <TabsContent value="config" className="space-y-8">
+                <Card>
+                    <CardHeader>
+                    <CardTitle className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                        <Star />
+                        Gerenciar Patentes
+                        </div>
+                        <RankFormDialog 
+                        triggerButton={<Button variant="outline"><Plus className="mr-2 h-4 w-4" /> Adicionar</Button>}
+                        onSave={(newRank) => {
+                            const updatedRanks = [...(managedRanks || []), newRank].sort((a,b)=> a.score - b.score);
                             setManagedRanks(updatedRanks);
-                          }}>
-                            Excluir
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </div>
-                </div>
-              ))}
-              <Button onClick={handleSaveRanks} className="w-full mt-4" disabled={managedRanks === null}>
-                Salvar Alterações nas Patentes
-              </Button>
-               <p className="text-xs text-muted-foreground text-center mt-2">
-                Salvar irá aplicar a lista de patentes acima para TODAS as unidades.
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Users />
-                  Gerenciar Funções/Cargos
-                </div>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex gap-2">
-                <Input 
-                  id="new-role" 
-                  placeholder="Nova função (ex: Capitão)" 
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      const input = e.currentTarget;
-                      const value = input.value.trim();
-                      if (value && managedRoles && !managedRoles.includes(value)) {
-                        setManagedRoles([...managedRoles, value]);
-                        input.value = '';
-                      }
-                    }
-                  }}
-                />
-                <Button onClick={() => {
-                  const input = document.getElementById('new-role') as HTMLInputElement;
-                  const value = input.value.trim();
-                  if (value && managedRoles && !managedRoles.includes(value)) {
-                    setManagedRoles([...managedRoles, value]);
-                    input.value = '';
-                  }
-                }}>
-                  <Plus className="h-4 w-4" />
-                </Button>
-              </div>
-              
-              <div className="space-y-2">
-                {managedRoles === null && <Skeleton className="h-10 w-full" />}
-                {managedRoles && managedRoles.map(role => (
-                  <div key={role} className="flex items-center justify-between p-2 border rounded-lg bg-card/50 text-left">
-                    <span>{role}</span>
-                    <div className="flex items-center gap-1">
-                      <RenameItemDialog 
-                        currentName={role}
-                        onRename={(newName) => {
-                          if (managedRoles.includes(newName)) {
-                            toast({ variant: 'destructive', title: "Erro!", description: "Esta função já existe." });
-                            return;
-                          }
-                          setManagedRoles(managedRoles.map(r => r === role ? newName : r));
                         }}
-                        triggerButton={<Button variant="ghost" size="icon" className="h-8 w-8"><Edit className="h-4 w-4" /></Button>}
-                        title="Editar Função"
-                      />
-                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => {
-                        setManagedRoles(managedRoles.filter(r => r !== role));
-                      }}>
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                        />
+                    </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                    {managedRanks === null && <Skeleton className="h-20 w-full" />}
+                    {managedRanks && managedRanks.map(rank => (
+                        <div key={rank.name} className="flex items-center gap-4 p-2 border rounded-lg">
+                        <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center">
+                            {rank.iconUrl ? (
+                            <img src={rank.iconUrl} alt={rank.name} className="h-6 w-6 object-contain" />
+                            ) : (
+                            <Star className="h-6 w-6 text-muted-foreground" />
+                            )}
+                        </div>
+                        <div className="flex-grow">
+                            <p className="font-semibold">{rank.name}</p>
+                            <p className="text-sm text-muted-foreground">Pontos: {rank.score}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <RankFormDialog 
+                            triggerButton={<Button variant="ghost" size="icon"><Edit className="h-4 w-4" /></Button>}
+                            onSave={(updatedRank) => {
+                                const updatedRanks = managedRanks.map(r => r.name === rank.name ? {...r, ...updatedRank} : r).sort((a,b) => a.score - b.score);
+                                setManagedRanks(updatedRanks);
+                            }}
+                            existingRank={rank}
+                            />
+                            <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                <AlertDialogTitle>Excluir Patente?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    Tem certeza que deseja excluir a patente "{rank.name}"? Esta ação não pode ser desfeita.
+                                </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => {
+                                    const updatedRanks = managedRanks.filter(r => r.name !== rank.name);
+                                    setManagedRanks(updatedRanks);
+                                }}>
+                                    Excluir
+                                </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                            </AlertDialog>
+                        </div>
+                        </div>
+                    ))}
+                    <Button onClick={handleSaveRanks} className="w-full mt-4" disabled={managedRanks === null}>
+                        Salvar Alterações nas Patentes
+                    </Button>
+                    </CardContent>
+                </Card>
 
-              <Button onClick={handleSaveRoles} className="w-full mt-4" disabled={managedRoles === null}>
-                Salvar Alterações nas Funções
-              </Button>
-               <p className="text-xs text-muted-foreground text-center mt-2">
-                Salvar irá aplicar a lista de funções acima para TODAS as unidades.
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <BookOpen />
-                  Gerenciar Classes
-                </div>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex gap-2">
-                <Input 
-                  id="new-class" 
-                  placeholder="Nova classe (ex: Líder)" 
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      const input = e.currentTarget;
-                      const value = input.value.trim();
-                      if (value && managedClasses && !managedClasses.includes(value)) {
-                        setManagedClasses([...managedClasses, value]);
-                        input.value = '';
-                      }
-                    }
-                  }}
-                />
-                <Button onClick={() => {
-                  const input = document.getElementById('new-class') as HTMLInputElement;
-                  const value = input.value.trim();
-                  if (value && managedClasses && !managedClasses.includes(value)) {
-                    setManagedClasses([...managedClasses, value]);
-                    input.value = '';
-                  }
-                }}>
-                  <Plus className="h-4 w-4" />
-                </Button>
-              </div>
-              
-              <div className="space-y-2">
-                {managedClasses === null && <Skeleton className="h-10 w-full" />}
-                {managedClasses && managedClasses.map(cls => (
-                  <div key={cls} className="flex items-center justify-between p-2 border rounded-lg bg-card/50 text-left">
-                    <span>{cls}</span>
-                    <div className="flex items-center gap-1">
-                      <RenameItemDialog 
-                        currentName={cls}
-                        onRename={(newName) => {
-                          if (managedClasses.includes(newName)) {
-                            toast({ variant: 'destructive', title: "Erro!", description: "Esta classe já existe." });
-                            return;
-                          }
-                          setManagedClasses(managedClasses.map(c => c === cls ? newName : c));
+                <Card>
+                    <CardHeader>
+                    <CardTitle className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                        <Users />
+                        Gerenciar Funções
+                        </div>
+                    </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                    <div className="flex gap-2">
+                        <Input 
+                        id="new-role" 
+                        placeholder="Nova função" 
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                            const input = e.currentTarget;
+                            const value = input.value.trim();
+                            if (value && managedRoles && !managedRoles.includes(value)) {
+                                setManagedRoles([...managedRoles, value]);
+                                input.value = '';
+                            }
+                            }
                         }}
-                        triggerButton={<Button variant="ghost" size="icon" className="h-8 w-8"><Edit className="h-4 w-4" /></Button>}
-                        title="Editar Classe"
-                      />
-                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => {
-                        setManagedClasses(managedClasses.filter(c => c !== cls));
-                      }}>
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
+                        />
+                        <Button onClick={() => {
+                        const input = document.getElementById('new-role') as HTMLInputElement;
+                        const value = input.value.trim();
+                        if (value && managedRoles && !managedRoles.includes(value)) {
+                            setManagedRoles([...managedRoles, value]);
+                            input.value = '';
+                        }
+                        }}>
+                        <Plus className="h-4 w-4" />
+                        </Button>
                     </div>
-                  </div>
-                ))}
-              </div>
-
-              <Button onClick={handleSaveClasses} className="w-full mt-4" disabled={managedClasses === null}>
-                Salvar Alterações nas Classes
-              </Button>
-               <p className="text-xs text-muted-foreground text-center mt-2">
-                Salvar irá aplicar a lista de classes acima para TODAS as unidades.
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Unidades Existentes</CardTitle>
-            </CardHeader>
-            <CardContent>
-                {isLoading && <div className="space-y-2">
-                  <Skeleton className="h-10 w-full" />
-                  <Skeleton className="h-10 w-full" />
-                </div> }
-                {units && units.length > 0 ? (
-                    <ul className="space-y-4">
-                        {units.map(unit => (
-                            <li key={unit.id} className="flex items-center justify-between p-3 bg-card rounded-lg border">
-                                <Link href={`/unit/${unit.id}`} className="font-medium hover:underline">{unit.name}</Link>
-                                <div className="flex items-center gap-2">
-                                    <Sheet open={editingUnit?.id === unit.id} onOpenChange={(isOpen) => !isOpen && setEditingUnit(null)}>
-                                        <SheetTrigger asChild>
-                                          <Button variant="outline" size="icon" onClick={() => setEditingUnit(unit)}>
-                                              <Edit />
-                                              <span className="sr-only">Editar {unit.name}</span>
-                                          </Button>
-                                        </SheetTrigger>
-                                        <SheetContent>
-                                          <SheetHeader>
-                                            <SheetTitle>Editar Unidade: {editingUnit?.name}</SheetTitle>
-                                          </SheetHeader>
-                                          {editingUnit && <EditUnitForm unit={editingUnit} onUpdate={handleUpdateUnit} />}
-                                        </SheetContent>
-                                    </Sheet>
-                                    <AlertDialog>
-                                        <AlertDialogTrigger asChild>
-                                            <Button variant="destructive" size="icon">
-                                                <Trash2 />
-                                                <span className="sr-only">Excluir {unit.name}</span>
-                                            </Button>
-                                        </AlertDialogTrigger>
-                                        <AlertDialogContent>
-                                            <AlertDialogHeader>
-                                                <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
-                                                <AlertDialogDescription>
-                                                    Essa ação não pode ser desfeita. Isso irá excluir permanentemente a unidade "{unit.name}".
-                                                </AlertDialogDescription>
-                                            </AlertDialogHeader>
-                                            <AlertDialogFooter>
-                                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                                <AlertDialogAction onClick={() => handleDeleteUnit(unit.id)}>
-                                                    Excluir
-                                                </AlertDialogAction>
-                                            </AlertDialogFooter>
-                                        </AlertDialogContent>
-                                    </AlertDialog>
-                                </div>
-                            </li>
+                    
+                    <div className="space-y-2">
+                        {managedRoles === null && <Skeleton className="h-10 w-full" />}
+                        {managedRoles && managedRoles.map(role => (
+                        <div key={role} className="flex items-center justify-between p-2 border rounded-lg bg-card/50 text-left">
+                            <span>{role}</span>
+                            <div className="flex items-center gap-1">
+                            <RenameItemDialog 
+                                currentName={role}
+                                onRename={(newName) => {
+                                if (managedRoles.includes(newName)) {
+                                    toast({ variant: 'destructive', title: "Erro!", description: "Esta função já existe." });
+                                    return;
+                                }
+                                setManagedRoles(managedRoles.map(r => r === role ? newName : r));
+                                }}
+                                triggerButton={<Button variant="ghost" size="icon" className="h-8 w-8"><Edit className="h-4 w-4" /></Button>}
+                                title="Editar Função"
+                            />
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => {
+                                setManagedRoles(managedRoles.filter(r => r !== role));
+                            }}>
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                            </div>
+                        </div>
                         ))}
-                    </ul>
-                ) : (
-                  !isLoading && <p className="text-muted-foreground text-center">Nenhuma unidade criada ainda.</p>
-                )}
-            </CardContent>
-          </Card>
-        </div>
+                    </div>
+
+                    <Button onClick={handleSaveRoles} className="w-full mt-4" disabled={managedRoles === null}>
+                        Salvar Alterações nas Funções
+                    </Button>
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader>
+                    <CardTitle className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                        <BookOpen />
+                        Gerenciar Classes
+                        </div>
+                    </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                    <div className="flex gap-2">
+                        <Input 
+                        id="new-class" 
+                        placeholder="Nova classe" 
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                            const input = e.currentTarget;
+                            const value = input.value.trim();
+                            if (value && managedClasses && !managedClasses.includes(value)) {
+                                setManagedClasses([...managedClasses, value]);
+                                input.value = '';
+                            }
+                            }
+                        }}
+                        />
+                        <Button onClick={() => {
+                        const input = document.getElementById('new-class') as HTMLInputElement;
+                        const value = input.value.trim();
+                        if (value && managedClasses && !managedClasses.includes(value)) {
+                            setManagedClasses([...managedClasses, value]);
+                            input.value = '';
+                        }
+                        }}>
+                        <Plus className="h-4 w-4" />
+                        </Button>
+                    </div>
+                    
+                    <div className="space-y-2">
+                        {managedClasses === null && <Skeleton className="h-10 w-full" />}
+                        {managedClasses && managedClasses.map(cls => (
+                        <div key={cls} className="flex items-center justify-between p-2 border rounded-lg bg-card/50 text-left">
+                            <span>{cls}</span>
+                            <div className="flex items-center gap-1">
+                            <RenameItemDialog 
+                                currentName={cls}
+                                onRename={(newName) => {
+                                if (managedClasses.includes(newName)) {
+                                    toast({ variant: 'destructive', title: "Erro!", description: "Esta classe já existe." });
+                                    return;
+                                }
+                                setManagedClasses(managedClasses.map(c => c === cls ? newName : c));
+                                }}
+                                triggerButton={<Button variant="ghost" size="icon" className="h-8 w-8"><Edit className="h-4 w-4" /></Button>}
+                                title="Editar Classe"
+                            />
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => {
+                                setManagedClasses(managedClasses.filter(c => c !== cls));
+                            }}>
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                            </div>
+                        </div>
+                        ))}
+                    </div>
+                    <Button onClick={handleSaveClasses} className="w-full mt-4" disabled={managedClasses === null}>
+                        Salvar Alterações nas Classes
+                    </Button>
+                    </CardContent>
+                </Card>
+            </TabsContent>
+        </Tabs>
       </div>
     </main>
   );
