@@ -8,18 +8,21 @@ import type { AppSettings } from '@/lib/types';
 
 
 import { supabase } from '@/lib/supabase';
+import { BottomNav } from '@/components/bottom-nav';
+import { SidebarNav } from '@/components/sidebar-nav';
+import { SplashScreen } from '@/components/splash-screen';
 
-async function getAppIconUrl() {
+async function getAppSettings(): Promise<AppSettings> {
     try {
-        const { data, error } = await supabase.from('settings').select('app_icon_url').eq('id', 'app').single();
-        if (error) throw error;
-        if (data?.app_icon_url) {
-            return data.app_icon_url;
-        }
+        const { data, error } = await supabase.from('settings').select('*').eq('id', 'app').single();
+        return {
+            appIconUrl: (data as any)?.app_icon_url || '/icons/icon-192x192.png',
+            clubName: (data as any)?.club_name || 'ITA'
+        };
     } catch (error) {
-        console.error("Error fetching app icon for layout from Supabase:", error);
+        console.error("Error fetching app settings for layout:", error);
     }
-    return '/icons/icon-192x192.png'; // Default icon
+    return { appIconUrl: '/icons/icon-192x192.png', clubName: 'ITA' };
 }
 
 
@@ -29,7 +32,7 @@ export const metadata: Metadata = {
   manifest: '/manifest',
 };
 
-import { BottomNav } from '@/components/bottom-nav';
+
 
 export default async function RootLayout({
   children,
@@ -37,7 +40,7 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
 
-  const appIconUrl = await getAppIconUrl();
+  const settings = await getAppSettings();
 
   return (
     <html lang="en" suppressHydrationWarning>
@@ -46,8 +49,8 @@ export default async function RootLayout({
         <meta name="theme-color" content="#facc15" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-        <link rel="icon" href={appIconUrl} type="image/png" sizes="any" />
-        <link rel="apple-touch-icon" href={appIconUrl} />
+        <link rel="icon" href={settings.appIconUrl} type="image/png" sizes="any" />
+        <link rel="apple-touch-icon" href={settings.appIconUrl} />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;700&display=swap" rel="stylesheet" />
@@ -58,10 +61,14 @@ export default async function RootLayout({
           defaultTheme="theme-retro-dark"
         >
           <AuthProvider>
-            <div className="flex flex-col min-h-screen">
-              {children}
+            <SplashScreen clubName={settings.clubName} />
+            <div className="flex flex-col sm:flex-row min-h-screen">
+              <SidebarNav clubName={settings.clubName} />
+              <div className="flex-grow flex flex-col min-h-screen">
+                {children}
+                <BottomNav />
+              </div>
             </div>
-            <BottomNav />
           </AuthProvider>
           <Toaster />
         </ThemeProvider>

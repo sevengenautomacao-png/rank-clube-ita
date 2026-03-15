@@ -23,13 +23,12 @@ export default function UnitsPage() {
   });
 
   return (
-    <div className={cn("flex flex-col min-h-screen pb-24", fontClassName)}>
+    <div className={cn("flex flex-col min-h-screen pb-24 sm:pb-0", fontClassName)}>
       <main className="flex-grow flex flex-col items-center p-4 sm:p-8 bg-background">
-        <header className="w-full max-w-4xl text-center mb-8">
-           <h1 className="text-2xl sm:text-4xl font-bold text-primary">
+        <header className="w-full max-w-4xl text-center py-6 sm:py-10">
+           <h1 className="text-4xl sm:text-6xl font-bold text-primary font-headline tracking-tighter">
             Unidades
           </h1>
-          <p className="text-muted-foreground mt-2">Escolha uma unidade para ver detalhes e pontuações.</p>
         </header>
 
         <div className="w-full max-w-4xl grid grid-cols-1 sm:grid-cols-2 gap-6">

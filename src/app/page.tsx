@@ -58,10 +58,10 @@ export default function Home() {
 
   return (
     <div className={`flex flex-col min-h-screen ${fontClassName}`}>
-      <main className="flex-grow flex flex-col items-center p-4 sm:p-8 bg-background pb-32">
+      <main className="flex-grow flex flex-col items-center p-4 sm:p-8 bg-background pb-32 sm:pb-8">
         <header className="w-full max-w-4xl text-center py-6 sm:py-10">
            <h1 className="text-4xl sm:text-6xl font-bold text-primary font-headline tracking-tighter">
-            Rank Clube Ita
+            RANKING
           </h1>
         </header>
         

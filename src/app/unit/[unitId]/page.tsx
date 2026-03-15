@@ -441,7 +441,7 @@ export default function UnitPage() {
 
   if (!unit) {
     return (
-        <main className="flex items-center justify-center min-h-screen pb-24">
+        <main className="flex items-center justify-center min-h-screen pb-24 sm:pb-8">
           <div className="text-center">
             <h1 className="text-4xl font-bold text-destructive">Unidade não encontrada</h1>
             <p className="text-lg text-muted-foreground mt-2">A unidade que você está procurando não existe.</p>
@@ -455,7 +455,7 @@ export default function UnitPage() {
 
   if (!isAuthenticated) {
     return (
-      <main className="flex items-center justify-center min-h-screen bg-background/80 backdrop-blur-sm pb-24" style={pageStyle}>
+      <main className="flex items-center justify-center min-h-screen bg-background/80 backdrop-blur-sm pb-24 sm:pb-8" style={pageStyle}>
         <div className="fixed inset-0 bg-cover bg-center" style={background.type === 'image' && background.value ? {backgroundImage: `url(${background.value})`} : {backgroundColor: background.value || 'transparent'}}></div>
         <div className="fixed inset-0 bg-background/80 backdrop-blur-sm"></div>
         <div className="container relative mx-auto p-4 sm:p-8 bg-card/90 backdrop-blur-sm rounded-lg max-w-md border">
@@ -493,7 +493,7 @@ export default function UnitPage() {
   }
 
   return (
-    <main className="min-h-screen pb-24" style={pageStyle}>
+    <main className="min-h-screen pb-24 sm:pb-8" style={pageStyle}>
         <div className="fixed inset-0 bg-cover bg-center" style={background.type === 'image' && background.value ? {backgroundImage: `url(${background.value})`} : {backgroundColor: background.value || 'transparent'}}></div>
         <div className="fixed inset-0 bg-background/80 backdrop-blur-sm"></div>
       <div className="container relative mx-auto p-4 sm:p-8 min-h-screen">

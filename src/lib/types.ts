@@ -3,6 +3,7 @@ import type { LucideIcon } from 'lucide-react';
 
 export type AppSettings = {
   appIconUrl?: string;
+  clubName?: string;
 }
 
 export type RankData = {

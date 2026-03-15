@@ -5,7 +5,7 @@ import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Plus, Trash2, Edit, LogOut, Eye, EyeOff, Star, Upload, Image as ImageIcon, Users, BookOpen, Download } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Edit, LogOut, Eye, EyeOff, Star, Upload, Image as ImageIcon, Users, BookOpen, Download, Palette } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -66,6 +66,7 @@ const rankFormSchema = z.object({
 
 const appSettingsFormSchema = z.object({
     appIconUrl: z.string().url({ message: "Por favor, insira uma URL de ícone válida." }).optional().or(z.literal('')),
+    clubName: z.string().min(1, { message: "O nome do clube é obrigatório." }).default("ITA"),
 });
 
 
@@ -88,12 +89,18 @@ export default function AdminPage() {
 
   const appSettingsForm = useForm<z.infer<typeof appSettingsFormSchema>>({
       resolver: zodResolver(appSettingsFormSchema),
-      defaultValues: { appIconUrl: '' }
+      defaultValues: { 
+        appIconUrl: '',
+        clubName: 'ITA'
+      }
   });
 
   useEffect(() => {
     if (appSettings) {
-        appSettingsForm.reset({ appIconUrl: appSettings.appIconUrl || '' });
+        appSettingsForm.reset({ 
+          appIconUrl: appSettings.appIconUrl || '',
+          clubName: appSettings.clubName || 'ITA'
+        });
     }
   }, [appSettings, appSettingsForm]);
 
@@ -549,12 +556,12 @@ export default function AdminPage() {
             <span className="sr-only">Sair</span>
         </Button>
       </header>
-      <div className="w-full max-w-xl pb-32">
-        <div className="text-center mb-8">
-            <h1 className="text-4xl sm:text-5xl font-bold font-headline text-primary">
+      <div className="w-full max-w-xl pb-32 sm:pb-8">
+        <div className="text-center py-6 sm:py-10 uppercase">
+            <h1 className="text-4xl sm:text-6xl font-bold font-headline text-primary tracking-tighter">
             ADM
             </h1>
-            <p className="text-lg text-muted-foreground mt-2">
+            <p className="text-lg text-muted-foreground mt-2 normal-case">
             Gerencie o aplicativo.
             </p>
         </div>
@@ -580,14 +587,28 @@ export default function AdminPage() {
 
                 <Card>
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                        <ImageIcon />
-                        Ícone do Aplicativo
+                    <CardTitle className="flex items-center gap-2">
+                        <Palette />
+                        Configurações Visuais
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
                         <Form {...appSettingsForm}>
                         <form onSubmit={appSettingsForm.handleSubmit(handleSaveAppSettings)} className="space-y-6 text-left">
+                            <FormField
+                            control={appSettingsForm.control}
+                            name="clubName"
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>Nome do Clube</FormLabel>
+                                <FormControl>
+                                    <Input placeholder="Ex: ITA" {...field} />
+                                </FormControl>
+                                <p className="text-xs text-muted-foreground mt-1">Este nome aparecerá na tela de carregamento (Splash Screen).</p>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                            />
                             <FormField
                             control={appSettingsForm.control}
                             name="appIconUrl"
@@ -597,13 +618,12 @@ export default function AdminPage() {
                                 <FormControl>
                                     <Input placeholder="https://exemplo.com/icone.png" {...field} />
                                 </FormControl>
-                                <p className="text-xs text-muted-foreground mt-1">Este ícone será usado quando o app for instalado (PWA). Use uma imagem PNG 192x192 ou 512x512.</p>
                                 <FormMessage />
                                 </FormItem>
                             )}
                             />
                             <Button type="submit" className="w-full">
-                                Salvar Ícone do App
+                                Salvar Configurações
                             </Button>
                         </form>
                         </Form>

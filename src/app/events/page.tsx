@@ -137,7 +137,7 @@ export default function CalendarPage() {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-10">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+        <div className="container mx-auto px-4 py-3 sm:h-16 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-0">
           <div className="flex items-center gap-4">
             <Link href="/">
               <Button variant="ghost" size="icon">
@@ -146,45 +146,47 @@ export default function CalendarPage() {
             </Link>
             <h1 className="text-xl font-bold flex items-center gap-2">
               <CalendarIcon className="h-6 w-6 text-primary" />
-              Agenda do Clube
+              Agenda de Eventos
             </h1>
           </div>
 
           {user && (
-            <Sheet open={isAddSheetOpen} onOpenChange={setIsAddSheetOpen}>
-              <SheetTrigger asChild>
-                <Button>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Novo Evento
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="right" className="w-[400px] sm:w-[540px]">
-                <SheetHeader>
-                  <SheetTitle>Adicionar Eventos</SheetTitle>
-                  <SheetDescription>
-                    Crie eventos manualmente ou importe via planilha.
-                  </SheetDescription>
-                </SheetHeader>
-                
-                <Tabs defaultValue="manual" className="mt-6">
-                  <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="manual">Manual</TabsTrigger>
-                    <TabsTrigger value="bulk">Planilha</TabsTrigger>
-                  </TabsList>
-                  <TabsContent value="manual">
-                    <AddEventForm onEventAdd={handleAddEvent} units={units || []} />
-                  </TabsContent>
-                  <TabsContent value="bulk">
-                    <SpreadsheetUpload onEventsUpload={handleBulkUpload} units={units || []} />
-                  </TabsContent>
-                </Tabs>
-              </SheetContent>
-            </Sheet>
+            <div className="w-full sm:w-auto flex justify-end">
+              <Sheet open={isAddSheetOpen} onOpenChange={setIsAddSheetOpen}>
+                <SheetTrigger asChild>
+                  <Button className="w-full sm:w-auto">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Novo Evento
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="right" className="w-[400px] sm:w-[540px]">
+                  <SheetHeader>
+                    <SheetTitle>Adicionar Eventos</SheetTitle>
+                    <SheetDescription>
+                      Crie eventos manualmente ou importe via planilha.
+                    </SheetDescription>
+                  </SheetHeader>
+                  
+                  <Tabs defaultValue="manual" className="mt-6">
+                    <TabsList className="grid w-full grid-cols-2">
+                      <TabsTrigger value="manual">Manual</TabsTrigger>
+                      <TabsTrigger value="bulk">Planilha</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="manual">
+                      <AddEventForm onEventAdd={handleAddEvent} units={units || []} />
+                    </TabsContent>
+                    <TabsContent value="bulk">
+                      <SpreadsheetUpload onEventsUpload={handleBulkUpload} units={units || []} />
+                    </TabsContent>
+                  </Tabs>
+                </SheetContent>
+              </Sheet>
+            </div>
           )}
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8 pb-24">
+      <main className="container mx-auto px-4 py-8 pb-24 sm:pb-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Calendar Sidebar */}
           <div className="lg:col-span-1 space-y-6">

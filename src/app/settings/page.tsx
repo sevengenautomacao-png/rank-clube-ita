@@ -11,13 +11,13 @@ export default function SettingsPage() {
   const { fontClassName } = useTheme();
 
   return (
-    <div className={cn("flex flex-col min-h-screen pb-24", fontClassName)}>
+    <div className={cn("flex flex-col min-h-screen pb-24 sm:pb-0", fontClassName)}>
       <main className="flex-grow flex flex-col items-center p-4 sm:p-8 bg-background">
-        <header className="w-full max-w-2xl text-center mb-8">
-           <h1 className="text-2xl sm:text-4xl font-bold text-primary">
+        <header className="w-full max-w-2xl text-center py-6 sm:py-10 uppercase">
+           <h1 className="text-4xl sm:text-6xl font-bold text-primary font-headline tracking-tighter">
             Ajustes
           </h1>
-          <p className="text-muted-foreground mt-2">Personalize sua experiência no app.</p>
+          <p className="text-muted-foreground mt-2 normal-case">Personalize sua experiência no app.</p>
         </header>
 
         <div className="w-full max-w-2xl space-y-6">
