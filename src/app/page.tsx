@@ -4,7 +4,8 @@
 import { useMemo } from 'react';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Users, Shield, Mountain, Gem, BookOpen, Star, Trophy, type LucideIcon, Palette } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Users, Shield, Mountain, Gem, BookOpen, Star, Trophy, type LucideIcon, Palette, Calendar as CalendarIcon } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import Image from 'next/image';
 import { useSupabaseTable } from '@/hooks/use-supabase';
@@ -67,7 +68,13 @@ export default function Home() {
            <h1 className="text-2xl sm:text-4xl font-bold text-primary">
             Rank Clube Ita
           </h1>
-           <div className="mt-4">
+           <div className="mt-4 flex items-center gap-4">
+            <Link href="/calendar">
+                <Button variant="outline" className="flex items-center gap-2">
+                    <CalendarIcon className="h-4 w-4" />
+                    Calendário
+                </Button>
+            </Link>
             <ThemeSwitcher />
           </div>
         </header>
@@ -95,6 +102,8 @@ export default function Home() {
                       alt={unit.name}
                       fill
                       className="object-cover z-0"
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                      priority={units.indexOf(unit) === 0}
                       data-ai-hint="nature landscape"
                     />
                   ) : (

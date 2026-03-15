@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowLeft, Plus, Trash2, User, Users, Settings, Shield, Mountain, Gem, BookOpen, Star, type LucideIcon, FilePlus2, GripVertical, Edit, Download } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, User, Users, Settings, Shield, Mountain, Gem, BookOpen, Star, type LucideIcon, FilePlus2, GripVertical, Edit, Download, Trophy, Calendar as CalendarIcon } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -630,6 +630,12 @@ export default function UnitPage() {
                 </div>
               </SheetContent>
             </Sheet>
+            <Link href="/calendar">
+                <Button variant="outline" size="sm" className="hidden sm:flex items-center gap-2">
+                    <CalendarIcon className="h-4 w-4" />
+                    Calendário
+                </Button>
+            </Link>
             <Sheet open={isAddMemberSheetOpen} onOpenChange={setAddMemberSheetOpen}>
               <SheetTrigger asChild>
                 <Button>

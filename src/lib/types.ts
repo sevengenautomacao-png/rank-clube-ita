@@ -38,20 +38,33 @@ export type Member = {
 };
 
 export type Unit = {
-  id:string;
+  id: string;
   name: string;
   password?: string;
-  members: Member[];
   cardImageUrl?: string;
   cardColor?: string;
   icon: string;
   iconUrl?: string;
   scoringCriteria: ScoringCriterion[];
-  scoreHistory?: ScoreInfo[];
-  scoreLogs?: any[];
-  ranks?: RankData[];
+  ranks: RankData[];
+  members?: Member[];
   roles?: string[];
   classes?: string[];
+  scoreLogs?: any[];
+};
+
+export type EventType = 'club' | 'unit' | 'extra';
+
+export type ClubEvent = {
+  id: string;
+  title: string;
+  description?: string;
+  date: string;
+  time?: string;
+  location?: string;
+  type: EventType;
+  unit_id?: string;
+  created_at?: string;
 };
 
 export type MemberScore = {

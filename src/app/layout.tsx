@@ -41,7 +41,7 @@ export default async function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <head>
         <meta name="theme-color" content="#facc15" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <link rel="icon" href={appIconUrl} type="image/png" sizes="any" />
         <link rel="apple-touch-icon" href={appIconUrl} />

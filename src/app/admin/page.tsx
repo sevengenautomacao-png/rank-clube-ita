@@ -5,7 +5,8 @@ import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Plus, Trash2, Edit, LogOut, Eye, EyeOff, Star, Upload, Image as ImageIcon, Users, BookOpen } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Edit, LogOut, Eye, EyeOff, Star, Upload, Image as ImageIcon, Users, BookOpen, Download } from 'lucide-react';
+import * as XLSX from 'xlsx';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -78,7 +79,9 @@ export default function AdminPage() {
   const [managedRoles, setManagedRoles] = useState<string[] | null>(null);
   const [managedClasses, setManagedClasses] = useState<string[] | null>(null);
 
-  const { data: units, loading: isLoading } = useSupabaseTable<Unit>('units');
+  const { data: units, loading: isLoading } = useSupabaseTable<Unit>('units', {
+    select: '*, members(*), score_logs(*)'
+  });
   const { data: appSettings } = useSupabaseDoc<AppSettings>('settings', 'app');
 
   const appSettingsForm = useForm<z.infer<typeof appSettingsFormSchema>>({
@@ -308,6 +311,69 @@ export default function AdminPage() {
     });
   };
 
+  const handleGlobalExport = () => {
+    if (!units) return;
+
+    // 1. Ranking Global Sheet
+    const allMembers: any[] = [];
+    units.forEach(unit => {
+      const unitMembers = (unit.members || []).map(member => ({
+        'Unidade': unit.name,
+        'Nome': member.name,
+        'Pontuação': member.score || 0,
+        'Classe': member.className || '',
+        'Função': member.role || '',
+        'Idade': member.age || '',
+      }));
+      allMembers.push(...unitMembers);
+    });
+
+    const sortedMembers = allMembers.sort((a, b) => b.Pontuação - a.Pontuação);
+    const rankingSheet = XLSX.utils.json_to_sheet(sortedMembers);
+
+    // 2. Histórico Global Sheet
+    const allHistory: any[] = [];
+    units.forEach(unit => {
+      const unitLogs = (unit.scoreLogs || []).flatMap((log: any) => {
+        const date = new Date(log.date).toLocaleDateString('pt-BR');
+        return Object.entries(log.memberScores || {}).map(([memberId, scoreDetails]: [string, any]) => {
+          const member = unit.members?.find(m => m.id === memberId);
+          if (!member) return null;
+
+          const row: any = {
+            'Unidade': unit.name,
+            'Data': date,
+            'Membro': member.name,
+          };
+
+          // Add scoring criteria columns
+          unit.scoringCriteria?.forEach((criterion: any) => {
+            row[criterion.label] = scoreDetails[criterion.id] ? criterion.points : 0;
+          });
+
+          row['Observação'] = scoreDetails.observation || '';
+          row['Total do Dia'] = scoreDetails.points || 0;
+          return row;
+        }).filter(row => row !== null);
+      });
+      allHistory.push(...unitLogs);
+    });
+
+    const historySheet = XLSX.utils.json_to_sheet(allHistory);
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, rankingSheet, 'Ranking Global');
+    XLSX.utils.book_append_sheet(workbook, historySheet, 'Histórico Global');
+
+    const fileName = `Relatorio_Geral_${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.xlsx`;
+    XLSX.writeFile(workbook, fileName);
+
+    toast({
+      title: "Relatório Global Gerado",
+      description: "O arquivo Excel foi baixado com sucesso.",
+    });
+  };
+
   if (isGlobalAuthLoading) {
     return (
         <main className="flex flex-col items-center justify-center min-h-screen p-4 bg-background">
@@ -437,6 +503,12 @@ export default function AdminPage() {
             <p className="text-lg text-muted-foreground mt-2">
             Gerencie as configurações do aplicativo aqui.
             </p>
+            <div className="flex justify-center mt-6">
+                <Button onClick={handleGlobalExport} variant="secondary" className="flex items-center gap-2">
+                    <Download className="h-4 w-4" />
+                    Gerar Relatório Geral (Global)
+                </Button>
+            </div>
         </div>
 
         <div className="space-y-10">
