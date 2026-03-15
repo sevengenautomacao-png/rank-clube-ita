@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
@@ -21,10 +20,11 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useDoc, useFirestore, useMemoFirebase, setDocumentNonBlocking } from '@/firebase';
-import { doc } from 'firebase/firestore';
+import { useSupabaseDoc, toSnakeCase } from '@/hooks/use-supabase';
+import { supabase } from '@/lib/supabase';
 import { getRankForScore } from '@/lib/ranks';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useAuth } from '@/hooks/use-auth';
 
 
 const iconMap: { [key: string]: LucideIcon } = {
@@ -39,15 +39,12 @@ export default function UnitPage() {
   const router = useRouter();
   const params = useParams();
   const { toast } = useToast();
+  const { user } = useAuth();
   const unitId = params.unitId as string;
-  const firestore = useFirestore();
 
-  const unitRef = useMemoFirebase(() => {
-    if (!firestore || !unitId) return null;
-    return doc(firestore, 'units', unitId);
-  }, [firestore, unitId]);
-
-  const { data: unit, isLoading: isUnitLoading } = useDoc<Unit>(unitRef);
+  const { data: unit, loading: isUnitLoading } = useSupabaseDoc<Unit>('units', unitId, {
+    select: '*, members(*), score_logs(*)'
+  });
 
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [passwordInput, setPasswordInput] = useState('');
@@ -68,6 +65,7 @@ export default function UnitPage() {
 
   useEffect(() => {
     if (unit) {
+      console.log('Unit data received:', unit);
       if (!unit.password) {
         setIsAuthenticated(true);
       }
@@ -77,9 +75,13 @@ export default function UnitPage() {
         patent: getRankForScore(m.score ?? 0, unit.ranks),
       })) || []);
       setScoringCriteria(unit.scoringCriteria || []);
-      const history = (unit.scoreHistory || []).map(sh => {
-        const date = sh.date && (sh.date as any).toDate ? (sh.date as any).toDate() : new Date(sh.date);
-        return { ...sh, date };
+      const history = (unit.scoreLogs || []).map((sh: any) => {
+        const date = sh.date ? new Date(sh.date) : new Date();
+        return {
+          id: sh.id,
+          date,
+          memberScores: sh.memberScores || {}
+        };
       });
       setScoreHistory(history);
       setLocalUnitName(unit.name);
@@ -106,20 +108,25 @@ export default function UnitPage() {
     }
   };
 
-  const handleSaveChanges = () => {
-    if (!unitRef || !unit) return;
+  const handleSaveChanges = async () => {
+    if (!unit) return;
 
-    const updatedUnitData: Partial<Unit> = {
+    const updatedUnitData = {
       name: localUnitName,
       icon: localUnitIcon,
-      iconUrl: localUnitIconUrl,
+      icon_url: localUnitIconUrl,
       password: localUnitPassword,
-      cardImageUrl: background.type === 'image' ? background.value : "",
-      cardColor: background.type === 'color' ? background.value : "",
-      scoringCriteria,
+      card_image_url: background.type === 'image' ? background.value : "",
+      card_color: background.type === 'color' ? background.value : "",
+      scoring_criteria: scoringCriteria,
     };
     
-    setDocumentNonBlocking(unitRef, updatedUnitData, { merge: true });
+    const { error } = await supabase.from('units').update(updatedUnitData).eq('id', unitId);
+
+    if (error) {
+      toast({ variant: 'destructive', title: "Erro ao salvar!", description: error.message });
+      return;
+    }
 
     toast({
       title: "Configurações salvas!",
@@ -135,18 +142,26 @@ export default function UnitPage() {
     }));
   };
 
-  const handleAddMember = (newMemberData: Omit<Member, 'id' | 'score' | 'ranking' | 'avatarUrl'> & { avatarUrl?: string }) => {
+  const handleAddMember = async (newMemberData: Omit<Member, 'id' | 'score' | 'ranking' | 'avatarUrl'> & { avatarUrl?: string }) => {
     const newMember: Member = {
       ...newMemberData,
-      id: new Date().getTime().toString(), // simple unique id
+      id: new Date().getTime().toString(),
       score: 0,
       ranking: 0,
     };
+    
+    const { error } = await supabase.from('members').insert(toSnakeCase({
+        ...newMember,
+        unitId: unitId
+    }));
+
+    if (error) {
+       toast({ variant: 'destructive', title: "Erro ao adicionar membro!", description: error.message });
+       return;
+    }
+
     const updatedMembers = updateMembersWithRank([...members, newMember]);
     setMembers(updatedMembers);
-    if (unitRef) {
-      setDocumentNonBlocking(unitRef, { members: updatedMembers.map(({patent, ...m}) => m) }, { merge: true });
-    }
     setAddMemberSheetOpen(false);
     toast({
       title: "Membro adicionado!",
@@ -154,12 +169,16 @@ export default function UnitPage() {
     })
   };
   
-  const handleUpdateMember = (updatedMemberData: Member) => {
+  const handleUpdateMember = async (updatedMemberData: Member) => {
+    const { error } = await supabase.from('members').update(toSnakeCase(updatedMemberData)).eq('id', updatedMemberData.id);
+
+    if (error) {
+       toast({ variant: 'destructive', title: "Erro ao atualizar!", description: error.message });
+       return;
+    }
+
     const updatedMembers = updateMembersWithRank(members.map(member => member.id === updatedMemberData.id ? {...member, ...updatedMemberData} : member));
     setMembers(updatedMembers);
-    if (unitRef) {
-      setDocumentNonBlocking(unitRef, { members: updatedMembers.map(({patent, ...m}) => m) }, { merge: true });
-    }
     setEditingMember(null);
     toast({
       title: "Membro atualizado!",
@@ -167,13 +186,18 @@ export default function UnitPage() {
     });
   };
 
-  const handleDeleteMember = (memberId: string) => {
+  const handleDeleteMember = async (memberId: string) => {
     const memberName = members.find(m => m.id === memberId)?.name;
+    
+    const { error } = await supabase.from('members').delete().eq('id', memberId);
+
+    if (error) {
+       toast({ variant: 'destructive', title: "Erro ao remover!", description: error.message });
+       return;
+    }
+
     const updatedMembers = members.filter(m => m.id !== memberId);
     setMembers(updateMembersWithRank(updatedMembers));
-    if (unitRef) {
-      setDocumentNonBlocking(unitRef, { members: updatedMembers.map(({patent, ...m}) => m) }, { merge: true });
-    }
     setEditingMember(null);
     toast({
       title: "Membro removido.",
@@ -187,15 +211,15 @@ export default function UnitPage() {
     setGenerateScoreDialogOpen(true);
   };
 
-  const handleScoresCalculated = (scoreInfo: ScoreInfo) => {
-    let updatedMembers = [...members];
+  const handleScoresCalculated = async (scoreInfo: ScoreInfo) => {
+    let updatedMembersList = [...members];
     let updatedScoreHistory = [...scoreHistory];
 
     if (editingReport) {
       const originalReport = scoreHistory.find(r => r.id === editingReport.id);
 
       if (originalReport) {
-        updatedMembers = members.map(member => {
+        updatedMembersList = members.map(member => {
           const originalMemberScore = originalReport.memberScores[member.id];
           if (originalMemberScore) {
             return { ...member, score: (member.score || 0) - originalMemberScore.points };
@@ -204,7 +228,7 @@ export default function UnitPage() {
         });
       }
 
-      updatedMembers = updatedMembers.map(member => {
+      updatedMembersList = updatedMembersList.map(member => {
         const newMemberScore = scoreInfo.memberScores[member.id];
         if (newMemberScore) {
           return { ...member, score: (member.score || 0) + newMemberScore.points };
@@ -220,7 +244,7 @@ export default function UnitPage() {
       });
 
     } else {
-      updatedMembers = members.map(member => {
+      updatedMembersList = members.map(member => {
         const memberScoreUpdate = scoreInfo.memberScores[member.id];
         if (memberScoreUpdate) {
           const newScore = (member.score || 0) + memberScoreUpdate.points;
@@ -237,14 +261,31 @@ export default function UnitPage() {
       });
     }
     
-    const finalMembers = updateMembersWithRank(updatedMembers);
-    setMembers(finalMembers);
-    setScoreHistory(updatedScoreHistory);
+    const finalMembers = updateMembersWithRank(updatedMembersList);
 
-    if (unitRef) {
-      setDocumentNonBlocking(unitRef, { members: finalMembers.map(({patent, ...m}) => m), scoreHistory: updatedScoreHistory }, { merge: true });
+    // 1. Update each member's score in the members table
+    const memberUpdatePromises = finalMembers.map(m => 
+        supabase.from('members').update({ score: m.score }).eq('id', m.id)
+    );
+    
+    // 2. Save/Update the score log in score_logs table
+    const scoreLogPromise = supabase.from('score_logs').upsert(toSnakeCase({
+        id: scoreInfo.id,
+        unit_id: unitId,
+        date: scoreInfo.date.toISOString(),
+        member_scores: scoreInfo.memberScores
+    }));
+
+    const results = await Promise.all([...memberUpdatePromises, scoreLogPromise]);
+    const error = results.find(r => r.error)?.error;
+
+    if (error) {
+       toast({ variant: 'destructive', title: "Erro ao salvar pontuação!", description: error.message });
+       return;
     }
 
+    setMembers(finalMembers);
+    setScoreHistory(updatedScoreHistory);
     setGenerateScoreDialogOpen(false);
     setEditingReport(null);
   }
@@ -254,7 +295,7 @@ export default function UnitPage() {
     if (field === 'points' && typeof value === 'string') {
         newCriteria[index][field] = parseInt(value, 10) || 0;
     } else {
-        newCriteria[index][field] = value as any;
+        (newCriteria[index] as any)[field] = value;
     }
     setScoringCriteria(newCriteria);
   };
@@ -269,11 +310,11 @@ export default function UnitPage() {
     setScoringCriteria(newCriteria);
   };
 
-   const handleDeleteReport = (reportId: string) => {
+   const handleDeleteReport = async (reportId: string) => {
     const reportToDelete = scoreHistory.find(r => r.id === reportId);
     if (!reportToDelete) return;
 
-    let updatedMembers = members.map(member => {
+    let updatedMembersList = members.map(member => {
       const memberScoreUpdate = reportToDelete.memberScores[member.id];
       if (memberScoreUpdate) {
         const newScore = (member.score || 0) - memberScoreUpdate.points;
@@ -284,14 +325,28 @@ export default function UnitPage() {
 
     const updatedScoreHistory = scoreHistory.filter(r => r.id !== reportId);
     
-    const finalMembers = updateMembersWithRank(updatedMembers);
+    const finalMembers = updateMembersWithRank(updatedMembersList);
+
+    // 1. Update members scores back
+    const memberUpdatePromises = finalMembers.map(m => 
+        supabase.from('members').update({ score: m.score }).eq('id', m.id)
+    );
+
+    // 2. Delete the score log from score_logs table
+    const deleteLogPromise = supabase.from('score_logs').delete().eq('id', reportId);
+
+    const results = await Promise.all([...memberUpdatePromises, deleteLogPromise]);
+    const error = results.find(r => r.error)?.error;
+
+    if (error) {
+       toast({ variant: 'destructive', title: "Erro ao excluir relatório!", description: error.message });
+       return;
+    }
+
     setMembers(finalMembers);
     setScoreHistory(updatedScoreHistory);
-
-    if (unitRef) {
-      setDocumentNonBlocking(unitRef, { members: finalMembers.map(({patent, ...m}) => m), scoreHistory: updatedScoreHistory }, { merge: true });
-    }
-    const reportDate = reportToDelete.date instanceof Date ? reportToDelete.date : (reportToDelete.date as any).toDate();
+    
+    const reportDate = reportToDelete.date instanceof Date ? reportToDelete.date : new Date(reportToDelete.date);
 
     toast({
       title: "Relatório Excluído!",
@@ -475,7 +530,7 @@ export default function UnitPage() {
                             onChange={(e) => setLocalUnitName(e.target.value)}
                         />
                     </div>
-                     <div>
+                    <div>
                         <Label htmlFor="unit-icon">Ícone da Unidade (Padrão)</Label>
                         <Select value={localUnitIcon} onValueChange={setLocalUnitIcon}>
                             <SelectTrigger id="unit-icon">
@@ -496,7 +551,7 @@ export default function UnitPage() {
                             </SelectContent>
                         </Select>
                     </div>
-                     <div>
+                    <div>
                         <Label htmlFor="unit-icon-url">URL do Ícone da Unidade (Opcional)</Label>
                         <Input
                             id="unit-icon-url"
@@ -536,37 +591,39 @@ export default function UnitPage() {
                             value={background.type === 'image' ? background.value : ''}
                             onChange={(e) => setBackground({type: 'image', value: e.target.value})}
                         />
-                         <p className="text-xs text-muted-foreground mt-1">Deixe em branco para usar a cor de fundo.</p>
+                        <p className="text-xs text-muted-foreground mt-1">Deixe em branco para usar a cor de fundo.</p>
                     </div>
-                    <div className="space-y-4">
-                      <Label>Itens de Pontuação</Label>
-                      <div className="space-y-3">
-                        {scoringCriteria.map((criterion, index) => (
-                          <div key={criterion.id} className="flex items-center gap-2 p-2 border rounded-lg bg-card/50">
-                            <GripVertical className="h-5 w-5 text-muted-foreground" />
-                            <Input
-                              type="text"
-                              value={criterion.label}
-                              onChange={(e) => handleUpdateCriterion(index, 'label', e.target.value)}
-                              className="flex-grow"
-                            />
-                            <Input
-                              type="number"
-                              value={criterion.points}
-                              onChange={(e) => handleUpdateCriterion(index, 'points', e.target.value)}
-                              className="w-16"
-                            />
-                            <Button variant="ghost" size="icon" onClick={() => handleDeleteCriterion(index)}>
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
-                          </div>
-                        ))}
+                    {user && (
+                      <div className="space-y-4">
+                        <Label>Itens de Pontuação</Label>
+                        <div className="space-y-3">
+                          {scoringCriteria.map((criterion, index) => (
+                            <div key={criterion.id} className="flex items-center gap-2 p-2 border rounded-lg bg-card/50">
+                              <GripVertical className="h-5 w-5 text-muted-foreground" />
+                              <Input
+                                type="text"
+                                value={criterion.label}
+                                onChange={(e) => handleUpdateCriterion(index, 'label', e.target.value)}
+                                className="flex-grow"
+                              />
+                              <Input
+                                type="number"
+                                value={criterion.points}
+                                onChange={(e) => handleUpdateCriterion(index, 'points', e.target.value)}
+                                className="w-16"
+                              />
+                              <Button variant="ghost" size="icon" onClick={() => handleDeleteCriterion(index)}>
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                        <Button variant="outline" onClick={handleAddCriterion} className="w-full">
+                          <Plus className="mr-2 h-4 w-4" />
+                          Adicionar Item
+                        </Button>
                       </div>
-                      <Button variant="outline" onClick={handleAddCriterion} className="w-full">
-                        <Plus className="mr-2 h-4 w-4" />
-                        Adicionar Item
-                      </Button>
-                    </div>
+                    )}
                 </div>
                  <div className="mt-auto pt-4">
                     <Button onClick={handleSaveChanges} className="w-full">Salvar Alterações</Button>
@@ -584,7 +641,7 @@ export default function UnitPage() {
                 <SheetHeader>
                   <SheetTitle>Adicionar Novo Membro</SheetTitle>
                 </SheetHeader>
-                <AddMemberForm onMemberAdd={handleAddMember} />
+                <AddMemberForm onMemberAdd={handleAddMember} roles={unit?.roles || []} classes={unit?.classes || []} />
               </SheetContent>
             </Sheet>
           </div>
@@ -704,6 +761,8 @@ export default function UnitPage() {
               member={editingMember}
               onMemberUpdate={handleUpdateMember}
               onMemberDelete={() => handleDeleteMember(editingMember.id)}
+              roles={unit?.roles || []}
+              classes={unit?.classes || []}
             />
           )}
         </SheetContent>
@@ -711,5 +770,3 @@ export default function UnitPage() {
     </main>
   );
 }
-
-    

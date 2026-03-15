@@ -7,8 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Users, Shield, Mountain, Gem, BookOpen, Star, Trophy, type LucideIcon, Palette } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import Image from 'next/image';
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query } from 'firebase/firestore';
+import { useSupabaseTable } from '@/hooks/use-supabase';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { Unit, Member, Rank } from '@/lib/types';
 import { getRankForScore, getRanksForScore } from '@/lib/ranks';
@@ -26,15 +25,11 @@ const iconMap: { [key:string]: LucideIcon } = {
 
 
 export default function Home() {
-  const firestore = useFirestore();
   const { fontClassName } = useTheme();
 
-  const unitsQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
-    return query(collection(firestore, 'units'));
-  }, [firestore]);
-
-  const { data: units, isLoading } = useCollection<Unit>(unitsQuery);
+  const { data: units, loading: isLoading } = useSupabaseTable<Unit>('units', {
+    select: '*, members(*)'
+  });
 
   const topMembers = useMemo(() => {
     if (!units) return [];
@@ -170,7 +165,7 @@ export default function Home() {
                                         return p.iconUrl ? (
                                             <img key={p.name} src={p.iconUrl} alt={p.name} title={p.name} className="h-4 w-4 object-contain" />
                                         ) : PatentIcon ? (
-                                            <PatentIcon key={p.name} title={p.name} className="h-4 w-4" />
+                                            <PatentIcon key={p.name} className="h-4 w-4" />
                                         ) : null
                                     })}
                                 </div>

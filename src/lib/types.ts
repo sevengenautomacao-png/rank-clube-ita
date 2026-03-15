@@ -48,7 +48,10 @@ export type Unit = {
   iconUrl?: string;
   scoringCriteria: ScoringCriterion[];
   scoreHistory?: ScoreInfo[];
+  scoreLogs?: any[];
   ranks?: RankData[];
+  roles?: string[];
+  classes?: string[];
 };
 
 export type MemberScore = {

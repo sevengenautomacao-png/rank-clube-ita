@@ -28,4 +28,25 @@ export const defaultRanks: RankData[] = [
     { score: 200, name: 'Marechal', iconUrl: '' },
 ];
 
-    
+export const defaultRoles: string[] = [
+    'Desbravador',
+    'Desbravadora',
+    'Capitão',
+    'Capitã',
+    'Conselheiro',
+    'Conselheira',
+    'Secretário',
+    'Tesoureiro',
+    'Instrutor',
+    'Diretor',
+];
+
+export const defaultClasses: string[] = [
+    'Amigo',
+    'Companheiro',
+    'Pesquisador',
+    'Pioneiro',
+    'Excursionista',
+    'Guia',
+    'Agrupadas',
+];

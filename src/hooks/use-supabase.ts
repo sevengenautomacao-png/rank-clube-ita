@@ -1,0 +1,92 @@
+import { useState, useEffect } from 'react';
+import { supabase } from '@/lib/supabase';
+
+export function toSnakeCase(obj: any): any {
+  if (Array.isArray(obj)) {
+    return obj.map(v => toSnakeCase(v));
+  } else if (obj !== null && obj.constructor === Object) {
+    return Object.keys(obj).reduce(
+      (result, key) => ({
+        ...result,
+        [key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`)]: toSnakeCase(obj[key]),
+      }),
+      {}
+    );
+  }
+  return obj;
+}
+
+function toCamelCase(obj: any): any {
+  if (Array.isArray(obj)) {
+    return obj.map(v => toCamelCase(v));
+  } else if (obj !== null && obj.constructor === Object) {
+    return Object.keys(obj).reduce(
+      (result, key) => ({
+        ...result,
+        [key.replace(/(_\w)/g, m => m[1].toUpperCase())]: toCamelCase(obj[key]),
+      }),
+      {}
+    );
+  }
+  return obj;
+}
+
+export function useSupabaseTable<T>(table: string, queryParams?: { select?: string, filter?: [string, any], order?: [string, { ascending: boolean }] }) {
+  const [data, setData] = useState<T[] | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<any>(null);
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        let query = supabase.from(table).select(queryParams?.select || '*');
+        
+        if (queryParams?.filter) {
+          query = query.eq(queryParams.filter[0], queryParams.filter[1]);
+        }
+        
+        if (queryParams?.order) {
+          query = query.order(queryParams.order[0], queryParams.order[1]);
+        }
+
+        const { data, error } = await query;
+        if (error) throw error;
+        
+        setData(toCamelCase(data));
+      } catch (err) {
+        setError(err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchData();
+  }, [table, JSON.stringify(queryParams)]);
+
+  return { data, loading, error };
+}
+
+export function useSupabaseDoc<T>(table: string, id: string, queryParams?: { select?: string }) {
+  const [data, setData] = useState<T | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<any>(null);
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const { data, error } = await supabase.from(table).select(queryParams?.select || '*').eq('id', id).single();
+        if (error) throw error;
+        
+        setData(toCamelCase(data));
+      } catch (err) {
+        setError(err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchData();
+  }, [table, id]);
+
+  return { data, loading, error };
+}

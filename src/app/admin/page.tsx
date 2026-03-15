@@ -5,7 +5,7 @@ import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Plus, Trash2, Edit, LogOut, Eye, EyeOff, Star, Upload, Image as ImageIcon } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Edit, LogOut, Eye, EyeOff, Star, Upload, Image as ImageIcon, Users, BookOpen } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -32,11 +32,11 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { useCollection, useDoc, useFirestore, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking, setDocumentNonBlocking, useAuth } from '@/firebase';
-import { collection, query, doc } from 'firebase/firestore';
-import { signInWithEmailAndPassword, signOut, setPersistence, browserLocalPersistence, browserSessionPersistence, type AuthError } from 'firebase/auth';
+import { useSupabaseTable, useSupabaseDoc, toSnakeCase } from '@/hooks/use-supabase';
+import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/hooks/use-auth';
 import { Skeleton } from '@/components/ui/skeleton';
-import { defaultScoringCriteria, defaultRanks } from '@/lib/data';
+import { defaultScoringCriteria, defaultRanks, defaultRoles, defaultClasses } from '@/lib/data';
 import { getRanks } from '@/lib/ranks';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Label } from '@/components/ui/label';
@@ -69,28 +69,17 @@ const appSettingsFormSchema = z.object({
 export default function AdminPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const firestore = useFirestore();
-  const auth = useAuth();
+  const { user, isLoading: isGlobalAuthLoading } = useAuth();
   const [editingUnit, setEditingUnit] = useState<Unit | null>(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isAuthLoading, setIsAuthLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   
   const [managedRanks, setManagedRanks] = useState<RankData[] | null>(null);
+  const [managedRoles, setManagedRoles] = useState<string[] | null>(null);
+  const [managedClasses, setManagedClasses] = useState<string[] | null>(null);
 
-  const unitsQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
-    return query(collection(firestore, 'units'));
-  }, [firestore]);
-
-  const appSettingsRef = useMemoFirebase(() => {
-    if (!firestore) return null;
-    return doc(firestore, 'settings', 'app');
-  }, [firestore]);
-  
-  const { data: appSettings } = useDoc<AppSettings>(appSettingsRef);
-
-  const { data: units, isLoading } = useCollection<Unit>(unitsQuery);
+  const { data: units, loading: isLoading } = useSupabaseTable<Unit>('units');
+  const { data: appSettings } = useSupabaseDoc<AppSettings>('settings', 'app');
 
   const appSettingsForm = useForm<z.infer<typeof appSettingsFormSchema>>({
       resolver: zodResolver(appSettingsFormSchema),
@@ -106,13 +95,29 @@ export default function AdminPage() {
   useEffect(() => {
     if (units && units.length > 0) {
         const unitWithRanks = units.find(u => u.ranks && u.ranks.length > 0);
-        if (unitWithRanks) {
-          setManagedRanks(unitWithRanks.ranks.sort((a, b) => a.score - b.score));
+        if (unitWithRanks && unitWithRanks.ranks) {
+          setManagedRanks([...unitWithRanks.ranks].sort((a, b) => a.score - b.score));
         } else {
           setManagedRanks(defaultRanks.sort((a, b) => a.score - b.score));
         }
+
+        const unitWithRoles = units.find(u => u.roles && u.roles.length > 0);
+        if (unitWithRoles && unitWithRoles.roles) {
+          setManagedRoles(unitWithRoles.roles);
+        } else {
+          setManagedRoles(defaultRoles);
+        }
+
+        const unitWithClasses = units.find(u => u.classes && u.classes.length > 0);
+        if (unitWithClasses && unitWithClasses.classes) {
+          setManagedClasses(unitWithClasses.classes);
+        } else {
+          setManagedClasses(defaultClasses);
+        }
     } else if (units && units.length === 0) {
       setManagedRanks(defaultRanks.sort((a, b) => a.score - b.score));
+      setManagedRoles(defaultRoles);
+      setManagedClasses(defaultClasses);
     }
   }, [units]);
 
@@ -132,40 +137,36 @@ export default function AdminPage() {
       rememberMe: false,
     },
   });
-
    const handleEmailPasswordSignIn = async (values: z.infer<typeof loginFormSchema>) => {
-    if (!auth) return;
     setIsAuthLoading(true);
     try {
-      const persistence = values.rememberMe ? browserLocalPersistence : browserSessionPersistence;
-      await setPersistence(auth, persistence);
+      const { error } = await supabase.auth.signInWithPassword({
+        email: values.email,
+        password: values.password,
+      });
 
-      await signInWithEmailAndPassword(auth, values.email, values.password);
-      setIsAuthenticated(true);
+      if (error) throw error;
+      
       toast({ title: "Acesso concedido!" });
-    } catch (error) {
-      const authError = error as AuthError;
-      if (authError.code === 'auth/invalid-credential') {
-        toast({ variant: 'destructive', title: "Erro de autenticação!", description: "Email ou senha incorretos. Por favor, tente novamente." });
-      } else {
-        console.error("Authentication error:", error);
-        toast({ variant: 'destructive', title: "Erro de autenticação!", description: "Ocorreu um erro inesperado. Verifique o console para mais detalhes." });
-      }
+    } catch (error: any) {
+      console.error("Authentication error:", error);
+      toast({ 
+        variant: 'destructive', 
+        title: "Erro de autenticação!", 
+        description: error.message || "Email ou senha incorretos." 
+      });
     } finally {
         setIsAuthLoading(false);
     }
   };
   
   const handleSignOut = async () => {
-    if (!auth) return;
-    await signOut(auth);
-    setIsAuthenticated(false);
+    await supabase.auth.signOut();
     loginForm.reset();
     toast({ title: "Você saiu." });
   }
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!firestore) return;
     const unitId = values.name.toLowerCase().replace(/\s+/g, '-');
     
     if (units?.some(unit => unit.id === unitId)) {
@@ -177,17 +178,24 @@ export default function AdminPage() {
       return;
     }
 
-    const newUnit: Omit<Unit, 'id'> = {
+    const newUnitData = {
+      id: unitId,
       name: values.name,
       password: values.password || "",
-      members: [],
       icon: 'Shield', // Default icon
-      scoringCriteria: defaultScoringCriteria,
+      scoring_criteria: defaultScoringCriteria,
       ranks: managedRanks || defaultRanks,
+      roles: managedRoles || defaultRoles,
+      classes: managedClasses || defaultClasses,
     };
 
-    setDocumentNonBlocking(doc(firestore, 'units', unitId), newUnit, {});
+    const { error } = await supabase.from('units').insert(toSnakeCase(newUnitData));
     
+    if (error) {
+      toast({ variant: 'destructive', title: "Erro ao criar!", description: error.message });
+      return;
+    }
+
     toast({
       title: 'Unidade criada!',
       description: `A unidade "${values.name}" foi criada com sucesso.`,
@@ -195,14 +203,17 @@ export default function AdminPage() {
     form.reset();
   }
 
-  function handleDeleteUnit(unitId: string) {
-    if (!firestore) return;
+  async function handleDeleteUnit(unitId: string) {
     const unitToDelete = units?.find(u => u.id === unitId);
     if (!unitToDelete) return;
     
-    const unitRef = doc(firestore, 'units', unitId);
-    deleteDocumentNonBlocking(unitRef);
+    const { error } = await supabase.from('units').delete().eq('id', unitId);
     
+    if (error) {
+        toast({ variant: 'destructive', title: "Erro ao excluir!", description: error.message });
+        return;
+    }
+
     toast({
         title: "Unidade Excluída",
         description: `A unidade "${unitToDelete.name}" foi excluída.`,
@@ -210,10 +221,19 @@ export default function AdminPage() {
     });
   }
 
-  function handleUpdateUnit(values: Partial<Unit>) {
-    if (!firestore || !editingUnit) return;
-    const unitRef = doc(firestore, 'units', editingUnit.id);
-    setDocumentNonBlocking(unitRef, values, { merge: true });
+  async function handleUpdateUnit(values: Partial<Unit>) {
+    if (!editingUnit) return;
+    
+    // Omit fields that are separate tables or computed
+    const { members, scoreHistory, ...updateData } = values as any;
+    
+    const { error } = await supabase.from('units').update(toSnakeCase(updateData)).eq('id', editingUnit.id);
+    
+    if (error) {
+      toast({ variant: 'destructive', title: "Erro ao atualizar!", description: error.message });
+      return;
+    }
+
     toast({
       title: "Unidade Atualizada",
       description: `A unidade "${editingUnit.name}" foi atualizada.`,
@@ -222,16 +242,17 @@ export default function AdminPage() {
   }
 
   async function handleSaveRanks() {
-    if (!firestore || !units || !managedRanks) return;
+    if (!units || !managedRanks) return;
     
     const ranksToSave = managedRanks.sort((a,b) => a.score - b.score);
 
-    const batch = units.map(unit => {
-        const unitRef = doc(firestore, 'units', unit.id);
-        return setDocumentNonBlocking(unitRef, { ranks: ranksToSave }, { merge: true });
-    });
+    // Update all units with the new ranks
+    const { error } = await supabase.from('units').update({ ranks: ranksToSave }).in('id', units.map(u => u.id));
     
-    await Promise.all(batch);
+    if (error) {
+      toast({ variant: 'destructive', title: "Erro ao salvar patentes!", description: error.message });
+      return;
+    }
 
     toast({
       title: 'Patentes Atualizadas!',
@@ -239,16 +260,64 @@ export default function AdminPage() {
     });
   }
 
-  const handleSaveAppSettings = (values: z.infer<typeof appSettingsFormSchema>) => {
-    if (!appSettingsRef) return;
-    setDocumentNonBlocking(appSettingsRef, values, { merge: true });
+  async function handleSaveRoles() {
+    if (!units || !managedRoles) return;
+    
+    // Update all units with the new roles
+    const { error } = await supabase.from('units').update({ roles: managedRoles }).in('id', units.map(u => u.id));
+    
+    if (error) {
+      toast({ variant: 'destructive', title: "Erro ao salvar funções!", description: error.message });
+      return;
+    }
+
+    toast({
+      title: 'Funções Atualizadas!',
+      description: 'As funções foram salvas para todas as unidades.',
+    });
+  }
+
+  async function handleSaveClasses() {
+    if (!units || !managedClasses) return;
+    
+    // Update all units with the new classes
+    const { error } = await supabase.from('units').update({ classes: managedClasses }).in('id', units.map(u => u.id));
+    
+    if (error) {
+      toast({ variant: 'destructive', title: "Erro ao salvar classes!", description: error.message });
+      return;
+    }
+
+    toast({
+      title: 'Classes Atualizadas!',
+      description: 'As classes foram salvas para todas as unidades.',
+    });
+  }
+
+  const handleSaveAppSettings = async (values: z.infer<typeof appSettingsFormSchema>) => {
+    const { error } = await supabase.from('settings').upsert({ id: 'app', ...toSnakeCase(values) });
+    
+    if (error) {
+        toast({ variant: 'destructive', title: "Erro ao salvar configurações!", description: error.message });
+        return;
+    }
+
     toast({
         title: "Configurações do App Salvas!",
         description: "As configurações gerais do aplicativo foram atualizadas.",
     });
   };
 
-  if (!isAuthenticated) {
+  if (isGlobalAuthLoading) {
+    return (
+        <main className="flex flex-col items-center justify-center min-h-screen p-4 bg-background">
+            <Skeleton className="h-12 w-48 mb-4" />
+            <Skeleton className="h-64 w-full max-w-md rounded-lg" />
+        </main>
+    )
+  }
+
+  if (!user) {
     return (
         <main className="flex flex-col items-center min-h-screen p-4 sm:p-8 bg-background">
             <header className="w-full max-w-xl flex items-start mb-8 sm:mb-12">
@@ -335,7 +404,7 @@ export default function AdminPage() {
                               </FormItem>
                             )}
                           />
-                          <Button type="submit" className="w-full" disabled={isAuthLoading || !auth}>
+                          <Button type="submit" className="w-full" disabled={isAuthLoading}>
                             {isAuthLoading ? "Verificando..." : "Entrar"}
                           </Button>
                         </form>
@@ -395,7 +464,7 @@ export default function AdminPage() {
                         </FormItem>
                     )}
                     />
-                    <Button type="submit" className="w-full" disabled={!firestore}>
+                    <Button type="submit" className="w-full">
                         Salvar Ícone do App
                     </Button>
                 </form>
@@ -439,7 +508,7 @@ export default function AdminPage() {
                       </FormItem>
                     )}
                   />
-                  <Button type="submit" className="w-full" disabled={!firestore}>
+                  <Button type="submit" className="w-full">
                     Criar Unidade
                   </Button>
                 </form>
@@ -517,6 +586,126 @@ export default function AdminPage() {
               </Button>
                <p className="text-xs text-muted-foreground text-center mt-2">
                 Salvar irá aplicar a lista de patentes acima para TODAS as unidades.
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Users />
+                  Gerenciar Funções/Cargos
+                </div>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex gap-2">
+                <Input 
+                  id="new-role" 
+                  placeholder="Nova função (ex: Capitão)" 
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      const input = e.currentTarget;
+                      const value = input.value.trim();
+                      if (value && managedRoles && !managedRoles.includes(value)) {
+                        setManagedRoles([...managedRoles, value]);
+                        input.value = '';
+                      }
+                    }
+                  }}
+                />
+                <Button onClick={() => {
+                  const input = document.getElementById('new-role') as HTMLInputElement;
+                  const value = input.value.trim();
+                  if (value && managedRoles && !managedRoles.includes(value)) {
+                    setManagedRoles([...managedRoles, value]);
+                    input.value = '';
+                  }
+                }}>
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+              
+              <div className="space-y-2">
+                {managedRoles === null && <Skeleton className="h-10 w-full" />}
+                {managedRoles && managedRoles.map(role => (
+                  <div key={role} className="flex items-center justify-between p-2 border rounded-lg bg-card/50">
+                    <span>{role}</span>
+                    <Button variant="ghost" size="icon" onClick={() => {
+                      setManagedRoles(managedRoles.filter(r => r !== role));
+                    }}>
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+
+              <Button onClick={handleSaveRoles} className="w-full mt-4" disabled={managedRoles === null}>
+                Salvar Alterações nas Funções
+              </Button>
+               <p className="text-xs text-muted-foreground text-center mt-2">
+                Salvar irá aplicar a lista de funções acima para TODAS as unidades.
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <BookOpen />
+                  Gerenciar Classes
+                </div>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex gap-2">
+                <Input 
+                  id="new-class" 
+                  placeholder="Nova classe (ex: Líder)" 
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      const input = e.currentTarget;
+                      const value = input.value.trim();
+                      if (value && managedClasses && !managedClasses.includes(value)) {
+                        setManagedClasses([...managedClasses, value]);
+                        input.value = '';
+                      }
+                    }
+                  }}
+                />
+                <Button onClick={() => {
+                  const input = document.getElementById('new-class') as HTMLInputElement;
+                  const value = input.value.trim();
+                  if (value && managedClasses && !managedClasses.includes(value)) {
+                    setManagedClasses([...managedClasses, value]);
+                    input.value = '';
+                  }
+                }}>
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+              
+              <div className="space-y-2">
+                {managedClasses === null && <Skeleton className="h-10 w-full" />}
+                {managedClasses && managedClasses.map(cls => (
+                  <div key={cls} className="flex items-center justify-between p-2 border rounded-lg bg-card/50">
+                    <span>{cls}</span>
+                    <Button variant="ghost" size="icon" onClick={() => {
+                      setManagedClasses(managedClasses.filter(c => c !== cls));
+                    }}>
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+
+              <Button onClick={handleSaveClasses} className="w-full mt-4" disabled={managedClasses === null}>
+                Salvar Alterações nas Classes
+              </Button>
+               <p className="text-xs text-muted-foreground text-center mt-2">
+                Salvar irá aplicar a lista de classes acima para TODAS as unidades.
               </p>
             </CardContent>
           </Card>

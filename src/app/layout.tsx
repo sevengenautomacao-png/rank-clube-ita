@@ -2,37 +2,22 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
-import { FirebaseClientProvider } from '@/firebase/client-provider';
+import { AuthProvider } from '@/hooks/use-auth';
 import { ThemeProvider } from '@/components/theme-provider';
-import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getFirestore, doc, getDoc } from 'firebase/firestore';
-import { firebaseConfig } from '@/firebase/config';
 import type { AppSettings } from '@/lib/types';
 
 
-// Helper to initialize Firebase Admin SDK
-function initializeFirebaseApp() {
-  if (!getApps().length) {
-    return initializeApp(firebaseConfig);
-  }
-  return getApp();
-}
+import { supabase } from '@/lib/supabase';
 
 async function getAppIconUrl() {
     try {
-        const firebaseApp = initializeFirebaseApp();
-        const firestore = getFirestore(firebaseApp);
-        const settingsRef = doc(firestore, 'settings', 'app');
-        const settingsSnap = await getDoc(settingsRef);
-        
-        if (settingsSnap.exists()) {
-            const settings = settingsSnap.data() as AppSettings;
-            if (settings.appIconUrl) {
-                return settings.appIconUrl;
-            }
+        const { data, error } = await supabase.from('settings').select('app_icon_url').eq('id', 'app').single();
+        if (error) throw error;
+        if (data?.app_icon_url) {
+            return data.app_icon_url;
         }
     } catch (error) {
-        console.error("Error fetching app icon for layout:", error);
+        console.error("Error fetching app icon for layout from Supabase:", error);
     }
     return '/icons/icon-192x192.png'; // Default icon
 }
@@ -69,9 +54,9 @@ export default async function RootLayout({
           attribute="class"
           defaultTheme="theme-retro-dark"
         >
-          <FirebaseClientProvider>
+          <AuthProvider>
             {children}
-          </FirebaseClientProvider>
+          </AuthProvider>
           <Toaster />
         </ThemeProvider>
       </body>

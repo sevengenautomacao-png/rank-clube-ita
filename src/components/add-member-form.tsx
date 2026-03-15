@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import type { Member } from "@/lib/types";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const formSchema = z.object({
   name: z.string().min(2, { message: "O nome deve ter pelo menos 2 caracteres." }),
@@ -18,9 +19,11 @@ const formSchema = z.object({
 
 type AddMemberFormProps = {
   onMemberAdd: (member: Omit<Member, 'id' | 'score' | 'ranking'>) => void;
+  roles?: string[];
+  classes?: string[];
 };
 
-export default function AddMemberForm({ onMemberAdd }: AddMemberFormProps) {
+export default function AddMemberForm({ onMemberAdd, roles = [], classes = [] }: AddMemberFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -72,9 +75,25 @@ export default function AddMemberForm({ onMemberAdd }: AddMemberFormProps) {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Função/Cargo</FormLabel>
-              <FormControl>
-                <Input placeholder="Capitão, Conselheiro..." {...field} />
-              </FormControl>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione uma função" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {roles.map((role) => (
+                    <SelectItem key={role} value={role}>
+                      {role}
+                    </SelectItem>
+                  ))}
+                  {roles.length === 0 && (
+                    <div className="p-2 text-sm text-muted-foreground whitespace-nowrap">
+                      Nenhuma função configurada
+                    </div>
+                  )}
+                </SelectContent>
+              </Select>
               <FormMessage />
             </FormItem>
           )}
@@ -85,9 +104,25 @@ export default function AddMemberForm({ onMemberAdd }: AddMemberFormProps) {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Classe</FormLabel>
-              <FormControl>
-                <Input placeholder="Amigo, Guia..." {...field} />
-              </FormControl>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione uma classe" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {classes.map((cls) => (
+                    <SelectItem key={cls} value={cls}>
+                      {cls}
+                    </SelectItem>
+                  ))}
+                  {classes.length === 0 && (
+                    <div className="p-2 text-sm text-muted-foreground whitespace-nowrap">
+                      Nenhuma classe configurada
+                    </div>
+                  )}
+                </SelectContent>
+              </Select>
               <FormMessage />
             </FormItem>
           )}
