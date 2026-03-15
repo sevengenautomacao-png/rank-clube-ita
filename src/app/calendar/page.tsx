@@ -261,7 +261,7 @@ export default function CalendarPage() {
           <div className="lg:col-span-2 space-y-6">
             <div className="flex items-center justify-between bg-card p-4 rounded-lg border shadow-sm">
               <h2 className="text-xl font-bold">
-                {format(selectedDate, "d 'de' MMMM", { locale: ptBR })}
+                {format(selectedDate, "dd/MM/yyyy")}
               </h2>
               <Badge variant="outline">{selectedDayEvents.length} Evento(s)</Badge>
             </div>

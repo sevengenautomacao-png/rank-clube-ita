@@ -65,7 +65,14 @@ export default function SpreadsheetUpload({ onEventsUpload, units }: Spreadsheet
             const date = XLSX.SSF.parse_date_code(rawDate);
             dateStr = `${date.y}-${String(date.m).padStart(2, '0')}-${String(date.d).padStart(2, '0')}`;
           } else {
-            dateStr = rawDate.toString();
+            const strDate = rawDate.toString().trim();
+            // Check if it's DD/MM/YYYY
+            if (/^\d{1,2}\/\d{1,2}\/\d{4}/.test(strDate)) {
+              const [d, m, y] = strDate.split('/');
+              dateStr = `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+            } else {
+              dateStr = strDate;
+            }
           }
 
           // Normalize type
@@ -115,7 +122,7 @@ export default function SpreadsheetUpload({ onEventsUpload, units }: Spreadsheet
     const exampleData = [
       {
         'Título': 'Reunião do Clube',
-        'Data': '2024-05-20',
+        'Data': '20/05/2024',
         'Horário': '19:30',
         'Local': 'Sede do Clube',
         'Tipo': 'Clube',
@@ -123,7 +130,7 @@ export default function SpreadsheetUpload({ onEventsUpload, units }: Spreadsheet
       },
       {
         'Título': 'Caminhada da Unidade',
-        'Data': '2024-05-25',
+        'Data': '25/05/2024',
         'Horário': '08:00',
         'Local': 'Parque Central',
         'Tipo': 'Unidade',
@@ -131,7 +138,7 @@ export default function SpreadsheetUpload({ onEventsUpload, units }: Spreadsheet
       },
       {
         'Título': 'Campori Regional',
-        'Data': '2024-06-15',
+        'Data': '15/06/2024',
         'Horário': 'O dia todo',
         'Local': 'Fazenda Municipal',
         'Tipo': 'Extra',
@@ -222,7 +229,7 @@ export default function SpreadsheetUpload({ onEventsUpload, units }: Spreadsheet
         <FileSpreadsheet className="h-4 w-4 mt-0.5 shrink-0" />
         <div>
           <p className="font-semibold mb-1">Dica de Formato:</p>
-          <p>A planilha deve conter colunas chamadas: <strong>Título</strong>, <strong>Data</strong> (YYYY-MM-DD), <strong>Horário</strong>, <strong>Local</strong>, <strong>Tipo</strong>, e <strong>Unidade</strong>.</p>
+          <p>A planilha deve conter colunas chamadas: <strong>Título</strong>, <strong>Data</strong> (DD/MM/YYYY), <strong>Horário</strong>, <strong>Local</strong>, <strong>Tipo</strong>, e <strong>Unidade</strong>.</p>
         </div>
       </div>
     </div>
