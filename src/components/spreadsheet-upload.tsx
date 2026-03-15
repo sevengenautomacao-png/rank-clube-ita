@@ -3,7 +3,7 @@
 import React, { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import * as XLSX from 'xlsx';
-import { Upload, FileSpreadsheet, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
+import { Upload, FileSpreadsheet, AlertCircle, CheckCircle2, Loader2, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { cn } from '@/lib/utils';
@@ -111,6 +111,42 @@ export default function SpreadsheetUpload({ onEventsUpload, units }: Spreadsheet
     reader.readAsBinaryString(file);
   }, [onEventsUpload, units]);
 
+  const downloadExample = useCallback(() => {
+    const exampleData = [
+      {
+        'Título': 'Reunião do Clube',
+        'Data': '2024-05-20',
+        'Horário': '19:30',
+        'Local': 'Sede do Clube',
+        'Tipo': 'Clube',
+        'Unidade': ''
+      },
+      {
+        'Título': 'Caminhada da Unidade',
+        'Data': '2024-05-25',
+        'Horário': '08:00',
+        'Local': 'Parque Central',
+        'Tipo': 'Unidade',
+        'Unidade': units[0]?.name || 'Águia'
+      },
+      {
+        'Título': 'Campori Regional',
+        'Data': '2024-06-15',
+        'Horário': 'O dia todo',
+        'Local': 'Fazenda Municipal',
+        'Tipo': 'Extra',
+        'Unidade': ''
+      }
+    ];
+
+    const ws = XLSX.utils.json_to_sheet(exampleData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Exemplo de Agenda");
+    
+    // Save the file
+    XLSX.writeFile(wb, "exemplo_agenda_eventos.xlsx");
+  }, [units]);
+
   const onDrop = useCallback((acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0) {
       processFile(acceptedFiles[0]);
@@ -169,6 +205,18 @@ export default function SpreadsheetUpload({ onEventsUpload, units }: Spreadsheet
           <AlertDescription>{success}</AlertDescription>
         </Alert>
       )}
+
+      <div className="flex justify-end">
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          onClick={downloadExample}
+          className="text-xs flex items-center gap-2 text-muted-foreground hover:text-primary"
+        >
+          <Download className="h-3.5 w-3.5" />
+          Baixar Planilha de Exemplo
+        </Button>
+      </div>
 
       <div className="text-xs text-muted-foreground bg-muted/30 p-3 rounded-lg flex gap-2 items-start">
         <FileSpreadsheet className="h-4 w-4 mt-0.5 shrink-0" />
