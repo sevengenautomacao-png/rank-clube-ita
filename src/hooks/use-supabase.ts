@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
+import { useClub } from './use-club';
 
 export function toSnakeCase(obj: any): any {
   if (Array.isArray(obj)) {
@@ -36,11 +37,22 @@ export function useSupabaseTable<T>(table: string, queryParams?: { select?: stri
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<any>(null);
 
+  const { activeClub, isLoadingClub } = useClub();
+
   useEffect(() => {
+    if (isLoadingClub) return;
+
     async function fetchData() {
+      setLoading(true);
       try {
         let query = supabase.from(table).select(queryParams?.select || '*');
         
+        // Auto-filter by active club for mapped tables
+        const clubTables = ['units', 'events', 'members', 'score_logs', 'settings'];
+        if (clubTables.includes(table) && activeClub?.id) {
+          query = query.eq('club_id', activeClub.id);
+        }
+
         if (queryParams?.filter) {
           query = query.eq(queryParams.filter[0], queryParams.filter[1]);
         }
@@ -61,7 +73,7 @@ export function useSupabaseTable<T>(table: string, queryParams?: { select?: stri
     }
 
     fetchData();
-  }, [table, JSON.stringify(queryParams)]);
+  }, [table, JSON.stringify(queryParams), activeClub?.id, isLoadingClub]);
 
   return { data, loading, error };
 }
@@ -71,10 +83,23 @@ export function useSupabaseDoc<T>(table: string, id: string, queryParams?: { sel
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<any>(null);
 
+  const { activeClub, isLoadingClub } = useClub();
+
   useEffect(() => {
+    if (isLoadingClub) return;
+
     async function fetchData() {
+      setLoading(true);
       try {
-        const { data, error } = await supabase.from(table).select(queryParams?.select || '*').eq('id', id).single();
+        let query = supabase.from(table).select(queryParams?.select || '*').eq('id', id);
+
+        // Auto-filter by active club stringently
+        const clubTables = ['units', 'events', 'members', 'score_logs', 'settings'];
+        if (clubTables.includes(table) && activeClub?.id) {
+          query = query.eq('club_id', activeClub.id);
+        }
+
+        const { data, error } = await query.single();
         if (error) throw error;
         
         setData(toCamelCase(data));
@@ -86,7 +111,7 @@ export function useSupabaseDoc<T>(table: string, id: string, queryParams?: { sel
     }
 
     fetchData();
-  }, [table, id]);
+  }, [table, id, activeClub?.id, isLoadingClub]);
 
   return { data, loading, error };
 }

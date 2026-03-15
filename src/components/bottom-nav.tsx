@@ -24,7 +24,7 @@ const navItems = [
     href: '/events',
   },
   {
-    label: 'Ajustes',
+    label: 'Config',
     icon: Settings,
     href: '/settings',
   },

@@ -8,8 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, ChevronUp, FileText, Edit, Trash2 } from 'lucide-react';
-import type { ScoreInfo, Member, ScoringCriterion } from '@/lib/types';
+import { Edit, Trash2, CalendarIcon as LucideCalendarIcon, ChevronUp, ChevronDown, FileText } from 'lucide-react';
+import type { ScoreInfo, Member, ScoringCriterion, ClubEvent } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import {
   AlertDialog,
@@ -23,16 +23,16 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 
-
 interface ScoreReportCardProps {
     report: ScoreInfo;
     members: Member[];
     scoringCriteria: ScoringCriterion[];
-    onDeleteReport: (reportId: string) => void;
-    onEditReport: (report: ScoreInfo) => void;
+    events?: ClubEvent[];
+    onDeleteReport?: (reportId: string) => void;
+    onEditReport?: (report: ScoreInfo) => void;
 }
 
-export default function ScoreReportCard({ report, members, scoringCriteria, onDeleteReport, onEditReport }: ScoreReportCardProps) {
+export default function ScoreReportCard({ report, members, scoringCriteria, events = [], onDeleteReport, onEditReport }: ScoreReportCardProps) {
     const [isOpen, setIsOpen] = useState(false);
 
     const getMemberName = (memberId: string) => {
@@ -53,45 +53,64 @@ export default function ScoreReportCard({ report, members, scoringCriteria, onDe
     }
 
     const displayDate = getReportDate();
-
+    
+    const relatedEvent = events.find(e => e.id === report.event_id);
 
     return (
         <Collapsible open={isOpen} onOpenChange={setIsOpen}>
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between p-4">
                     <div className="flex items-center gap-3">
-                        <FileText className="h-6 w-6 text-primary" />
-                        <CardTitle className="text-xl">
-                            Relatório de {format(displayDate, "PPP", { locale: ptBR })}
+                        <LucideCalendarIcon className="h-6 w-6 text-primary" />
+                        <CardTitle className="text-xl flex flex-col sm:flex-row sm:items-baseline gap-2">
+                            <span>{relatedEvent ? relatedEvent.title : 'Relatório'}</span>
+                            <span className="text-sm font-normal text-muted-foreground whitespace-nowrap">
+                                {format(displayDate, "PPP", { locale: ptBR })}
+                            </span>
                         </CardTitle>
                     </div>
                     <div className="flex items-center gap-2">
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); onEditReport(report); }}>
-                            <Edit className="h-4 w-4" />
-                            <span className="sr-only">Editar Relatório</span>
+                        {onEditReport && (
+                        <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onEditReport(report);
+                            }}
+                        >
+                            <Edit className="h-4 w-4 mr-2" />
+                            Editar
                         </Button>
+                        )}
+                        {onDeleteReport && (
                         <AlertDialog>
                             <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={(e) => e.stopPropagation()}>
-                                    <Trash2 className="h-4 w-4" />
-                                    <span className="sr-only">Excluir Relatório</span>
+                                <Button 
+                                    variant="destructive" 
+                                    size="sm"
+                                    onClick={(e) => e.stopPropagation()}
+                                >
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    Excluir
                                 </Button>
                             </AlertDialogTrigger>
-                            <AlertDialogContent>
+                            <AlertDialogContent onClick={(e) => e.stopPropagation()}>
                                 <AlertDialogHeader>
                                     <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
                                     <AlertDialogDescription>
-                                        Essa ação não pode ser desfeita. Isso irá excluir permanentemente o relatório de {format(displayDate, "dd/MM/yyyy")} e reverterá as pontuações aplicadas aos membros.
+                                        Essa ação não pode ser desfeita. Isso irá excluir permanentemente este relatório de pontuação.
                                     </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
                                     <AlertDialogCancel>Cancelar</AlertDialogCancel>
                                     <AlertDialogAction onClick={() => onDeleteReport(report.id)}>
-                                        Excluir
+                                        Sim, excluir
                                     </AlertDialogAction>
                                 </AlertDialogFooter>
                             </AlertDialogContent>
                         </AlertDialog>
+                        )}
                         <CollapsibleTrigger asChild>
                             <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
                                 {isOpen ? <ChevronUp /> : <ChevronDown />}

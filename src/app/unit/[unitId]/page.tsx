@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import type { Unit, Member, ScoreInfo, ScoringCriterion, Rank } from '@/lib/types';
+import type { Unit, Member, ScoreInfo, ScoringCriterion, Rank, ClubEvent } from '@/lib/types';
 import AddMemberForm from '@/components/add-member-form';
 import EditMemberForm from '@/components/edit-member-form';
 import GenerateScoreForm from '@/components/generate-score-form';
@@ -20,11 +20,12 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useSupabaseDoc, toSnakeCase } from '@/hooks/use-supabase';
+import { useSupabaseDoc, useSupabaseTable, toSnakeCase } from '@/hooks/use-supabase';
 import { supabase } from '@/lib/supabase';
 import { getRankForScore } from '@/lib/ranks';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/hooks/use-auth';
+import { ImageUpload } from '@/components/image-upload';
 
 
 const iconMap: { [key: string]: LucideIcon } = {
@@ -39,15 +40,34 @@ export default function UnitPage() {
   const router = useRouter();
   const params = useParams();
   const { toast } = useToast();
-  const { user } = useAuth();
   const unitId = params.unitId as string;
+
+  // Handle Authentication and Permissions
+  const { user, profile: currentUserProfile, isLoading: isGlobalAuthLoading } = useAuth();
+  
+  // A secretary or admin can always edit. A counselor can only edit if it matches their unit_id.
+  const hasEditPermission = useMemo(() => {
+     if (!currentUserProfile) return false;
+     if (currentUserProfile.role === 'admin' || currentUserProfile.role === 'secretary') return true;
+     if (currentUserProfile.role === 'counselor') {
+        return currentUserProfile.unit_id === unitId;
+     }
+     return false; // members have no edit permission anywhere
+  }, [currentUserProfile, unitId]);
 
   const { data: unit, loading: isUnitLoading } = useSupabaseDoc<Unit>('units', unitId, {
     select: '*, members(*), score_logs(*)'
   });
 
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const { data: eventsList } = useSupabaseTable<ClubEvent>('events');
+  const globalEvents = useMemo(() => eventsList?.filter(e => e.type !== 'unit') || [], [eventsList]);
+
+  const [isPasswordAuthenticated, setIsPasswordAuthenticated] = useState(false);
   const [passwordInput, setPasswordInput] = useState('');
+
+  // The user is considered authenticated to edit if they have the global Role permission,
+  // OR if they successfully entered the unit's local password.
+  const isAuthenticated = hasEditPermission || isPasswordAuthenticated;
 
   const [members, setMembers] = useState<(Member & { patent: Rank })[]>([]);
   const [scoringCriteria, setScoringCriteria] = useState<ScoringCriterion[]>([]);
@@ -67,7 +87,7 @@ export default function UnitPage() {
     if (unit) {
       console.log('Unit data received:', unit);
       if (!unit.password) {
-        setIsAuthenticated(true);
+        setIsPasswordAuthenticated(true);
       }
       setMembers(unit.members?.map(m => ({ 
         ...m, 
@@ -101,7 +121,7 @@ export default function UnitPage() {
   const handlePasswordSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (unit && passwordInput === unit.password) {
-      setIsAuthenticated(true);
+      setIsPasswordAuthenticated(true);
       toast({ title: "Acesso concedido!" });
     } else {
       toast({ variant: 'destructive', title: "Senha incorreta!" });
@@ -509,6 +529,7 @@ export default function UnitPage() {
             </h1>
           </div>
           <div className="flex items-center gap-2 w-full sm:w-auto justify-center">
+            {hasEditPermission && (
             <Sheet open={isSettingsSheetOpen} onOpenChange={setSettingsSheetOpen}>
               <SheetTrigger asChild>
                 <Button variant="outline" size="icon">
@@ -552,13 +573,13 @@ export default function UnitPage() {
                         </Select>
                     </div>
                     <div>
-                        <Label htmlFor="unit-icon-url">URL do Ícone da Unidade (Opcional)</Label>
-                        <Input
-                            id="unit-icon-url"
-                            type="text"
-                            placeholder="https://exemplo.com/icone.png"
+                        <Label>Ícone da Unidade (Imagem)</Label>
+                        <ImageUpload
                             value={localUnitIconUrl}
-                            onChange={(e) => setLocalUnitIconUrl(e.target.value)}
+                            onChange={setLocalUnitIconUrl}
+                            shape="square"
+                            label="Ícone da unidade"
+                            hint="Clique para enviar uma imagem de ícone"
                         />
                         <p className="text-xs text-muted-foreground mt-1">Deixe em branco para usar o ícone padrão.</p>
                     </div>
@@ -583,13 +604,13 @@ export default function UnitPage() {
                         />
                     </div>
                     <div>
-                        <Label htmlFor="bg-image">URL da Imagem de Fundo do Card</Label>
-                        <Input 
-                            id="bg-image"
-                            type="text" 
-                            placeholder="https://exemplo.com/imagem.png"
+                        <Label>Imagem de Fundo do Card</Label>
+                        <ImageUpload
                             value={background.type === 'image' ? background.value : ''}
-                            onChange={(e) => setBackground({type: 'image', value: e.target.value})}
+                            onChange={(url) => setBackground({ type: url ? 'image' : 'color', value: url || background.value })}
+                            shape="square"
+                            label="Imagem de fundo"
+                            hint="Clique para enviar a imagem de fundo do card"
                         />
                         <p className="text-xs text-muted-foreground mt-1">Deixe em branco para usar a cor de fundo.</p>
                     </div>
@@ -630,12 +651,14 @@ export default function UnitPage() {
                 </div>
               </SheetContent>
             </Sheet>
+            )}
             <Link href="/events">
                 <Button variant="outline" size="sm" className="hidden sm:flex items-center gap-2">
                     <CalendarIcon className="h-4 w-4" />
                     Agenda de Eventos
                 </Button>
             </Link>
+            {hasEditPermission && (
             <Sheet open={isAddMemberSheetOpen} onOpenChange={setAddMemberSheetOpen}>
               <SheetTrigger asChild>
                 <Button>
@@ -650,6 +673,7 @@ export default function UnitPage() {
                 <AddMemberForm onMemberAdd={handleAddMember} roles={unit?.roles || []} classes={unit?.classes || []} />
               </SheetContent>
             </Sheet>
+            )}
           </div>
         </header>
 
@@ -696,16 +720,19 @@ export default function UnitPage() {
                         )}
                     </CardContent>
                     <div className="absolute top-4 right-4 opacity-100 md:group-hover:opacity-100 transition-opacity focus-within:opacity-100">
+                        {hasEditPermission && (
                         <Button variant="outline" size="icon" onClick={() => setEditingMember(member)}>
                         <Edit className="h-4 w-4" />
                         <span className="sr-only">Editar {member.name}</span>
                         </Button>
+                        )}
                     </div>
                     </Card>
                 )
               })}
             </div>
             <div className="mt-8 flex justify-center">
+                {hasEditPermission && (
                 <Dialog open={isGenerateScoreDialogOpen} onOpenChange={(isOpen) => {
                   setGenerateScoreDialogOpen(isOpen);
                   if (!isOpen) setEditingReport(null);
@@ -720,9 +747,10 @@ export default function UnitPage() {
                         <DialogHeader>
                             <DialogTitle>{editingReport ? 'Editar Lançamento' : 'Lançar nova pontuação'}</DialogTitle>
                         </DialogHeader>
-                        {unit && <GenerateScoreForm members={members} scoringCriteria={unit.scoringCriteria} onScoresCalculated={handleScoresCalculated} existingReport={editingReport} />}
+                        {unit && <GenerateScoreForm events={globalEvents} members={members} scoringCriteria={unit.scoringCriteria} onScoresCalculated={handleScoresCalculated} existingReport={editingReport} />}
                     </DialogContent>
                 </Dialog>
+                )}
             </div>
              {scoreHistory.length > 0 && (
               <div className="mt-12">
@@ -739,9 +767,10 @@ export default function UnitPage() {
                         key={report.id} 
                         report={report} 
                         members={members} 
+                        events={globalEvents}
                         scoringCriteria={scoringCriteria}
-                        onDeleteReport={handleDeleteReport}
-                        onEditReport={() => handleOpenScoreDialog(report)}
+                        onDeleteReport={hasEditPermission ? handleDeleteReport : undefined}
+                        onEditReport={hasEditPermission ? () => handleOpenScoreDialog(report) : undefined}
                       />
                   ))}
                 </div>

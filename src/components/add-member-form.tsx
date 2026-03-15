@@ -10,6 +10,7 @@ import type { Member } from "@/lib/types";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getClassByAge } from "@/lib/utils";
 import { useEffect } from "react";
+import { ImageUpload } from "@/components/image-upload";
 
 const formSchema = z.object({
   name: z.string().min(2, { message: "O nome deve ter pelo menos 2 caracteres." }),
@@ -145,9 +146,14 @@ export default function AddMemberForm({ onMemberAdd, roles = [], classes = [] }:
           name="avatarUrl"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>URL da Foto de Perfil (Opcional)</FormLabel>
+              <FormLabel>Foto de Perfil (Opcional)</FormLabel>
               <FormControl>
-                <Input placeholder="https://exemplo.com/foto.png" {...field} />
+                <ImageUpload
+                  value={field.value || ''}
+                  onChange={field.onChange}
+                  shape="circle"
+                  label="Foto de perfil"
+                />
               </FormControl>
               <FormMessage />
             </FormItem>

@@ -77,6 +77,7 @@ export type MemberScore = {
 export type ScoreInfo = {
   id: string;
   date: Date;
+  event_id?: string;
   memberScores: {
     [memberId:string]: MemberScore;
   }

@@ -5,7 +5,7 @@ import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Plus, Trash2, Edit, LogOut, Eye, EyeOff, Star, Upload, Image as ImageIcon, Users, BookOpen, Download, Palette } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Edit, LogOut, Eye, EyeOff, Star, Upload, Image as ImageIcon, Users, BookOpen, Download, Palette, ShieldAlert } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -35,7 +35,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useSupabaseTable, useSupabaseDoc, toSnakeCase } from '@/hooks/use-supabase';
 import { supabase } from '@/lib/supabase';
-import { useAuth } from '@/hooks/use-auth';
+import { useAuth, UserProfile } from '@/hooks/use-auth';
 import { Skeleton } from '@/components/ui/skeleton';
 import { defaultScoringCriteria, defaultRanks, defaultRoles, defaultClasses } from '@/lib/data';
 import { getRanks } from '@/lib/ranks';
@@ -45,7 +45,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-
+import { Select as UISelect, SelectContent as UISelectContent, SelectItem as UISelectItem, SelectTrigger as UISelectTrigger, SelectValue as UISelectValue } from '@/components/ui/select';
 
 const formSchema = z.object({
   name: z.string().min(2, { message: 'O nome deve ter pelo menos 2 caracteres.' }),
@@ -73,7 +73,7 @@ const appSettingsFormSchema = z.object({
 export default function AdminPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const { user, isLoading: isGlobalAuthLoading } = useAuth();
+  const { user, profile: currentUserProfile, isLoading: isGlobalAuthLoading } = useAuth();
   const [editingUnit, setEditingUnit] = useState<Unit | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -85,6 +85,9 @@ export default function AdminPage() {
   const { data: units, loading: isLoading } = useSupabaseTable<Unit>('units', {
     select: '*, members(*), score_logs(*)'
   });
+
+  const { data: profiles, loading: isProfilesLoading } = useSupabaseTable<UserProfile>('profiles');
+
   const { data: appSettings } = useSupabaseDoc<AppSettings>('settings', 'app');
 
   const appSettingsForm = useForm<z.infer<typeof appSettingsFormSchema>>({
@@ -435,7 +438,21 @@ export default function AdminPage() {
     });
   };
 
-  if (isGlobalAuthLoading) {
+  const handleUpdateUserProfile = async (userId: string, updates: Partial<UserProfile>) => {
+    const { error } = await supabase.from('profiles').update(toSnakeCase(updates)).eq('id', userId);
+    
+    if (error) {
+      toast({ variant: 'destructive', title: "Erro ao atualizar perfil!", description: error.message });
+      return;
+    }
+
+    toast({
+      title: "Perfil Atualizado",
+      description: "Os acessos do usuário foram atualizados com sucesso.",
+    });
+  };
+
+  if (isGlobalAuthLoading || isProfilesLoading) {
     return (
         <main className="flex flex-col items-center justify-center min-h-screen p-4 bg-background pb-24">
             <Skeleton className="h-12 w-48 mb-4" />
@@ -543,6 +560,26 @@ export default function AdminPage() {
     );
   }
 
+  if (currentUserProfile && !['admin', 'secretary'].includes(currentUserProfile.role)) {
+     return (
+        <main className="flex flex-col items-center min-h-screen p-4 sm:p-8 bg-background pb-24">
+            <header className="w-full max-w-xl flex items-start mb-8 sm:mb-12">
+                <Button variant="outline" size="icon" asChild>
+                <Link href="/" aria-label="Voltar para o início">
+                    <ArrowLeft />
+                </Link>
+                </Button>
+            </header>
+            <div className="w-full max-w-md text-center mt-12">
+                <ShieldAlert className="h-16 w-16 text-destructive mx-auto mb-4" />
+                <h1 className="text-3xl font-bold font-headline text-destructive mb-2">Acesso Negado</h1>
+                <p className="text-muted-foreground">Sua conta ({currentUserProfile.email}) não tem permissão para acessar o painel administrativo do clube.</p>
+                <Button variant="outline" onClick={handleSignOut} className="mt-8">Sair da Conta</Button>
+            </div>
+        </main>
+     )
+  }
+
   return (
     <main className="flex flex-col items-center min-h-screen p-4 sm:p-8 bg-background">
       <header className="w-full max-w-xl flex items-center justify-between mb-8 sm:mb-12">
@@ -567,9 +604,10 @@ export default function AdminPage() {
         </div>
 
         <Tabs defaultValue="geral" className="w-full">
-            <TabsList className="grid w-full grid-cols-3 mb-8">
+            <TabsList className="grid w-full grid-cols-4 mb-8">
                 <TabsTrigger value="geral">Geral</TabsTrigger>
                 <TabsTrigger value="unidades">Unidades</TabsTrigger>
+                <TabsTrigger value="acessos">Acessos</TabsTrigger>
                 <TabsTrigger value="config">Definições</TabsTrigger>
             </TabsList>
 
@@ -733,6 +771,62 @@ export default function AdminPage() {
                             </ul>
                         ) : (
                         !isLoading && <p className="text-muted-foreground text-center">Nenhuma unidade criada ainda.</p>
+                        )}
+                    </CardContent>
+                </Card>
+            </TabsContent>
+
+            <TabsContent value="acessos" className="space-y-8">
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                           <ShieldAlert />
+                           Gerenciar Acessos (Membros)
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        {isProfilesLoading ? (
+                            <Skeleton className="h-32 w-full" />
+                        ) : profiles && profiles.length > 0 ? (
+                            <div className="space-y-4">
+                                {profiles.map(p => (
+                                    <div key={p.id} className="p-4 border rounded-lg bg-card/50 flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
+                                        <div className="text-left flex-1">
+                                            <p className="font-medium">{p.email}</p>
+                                            <p className="text-sm text-muted-foreground">ID: {p.id.split('-')[0]}...</p>
+                                        </div>
+                                        <div className="flex flex-col sm:flex-row gap-2 items-center sm:items-stretch w-full sm:w-auto">
+                                            <UISelect value={p.role} onValueChange={(val) => handleUpdateUserProfile(p.id, { role: val as any })}>
+                                                <UISelectTrigger className="w-[140px]">
+                                                    <UISelectValue placeholder="Papel" />
+                                                </UISelectTrigger>
+                                                <UISelectContent>
+                                                    <UISelectItem value="admin">Admin</UISelectItem>
+                                                    <UISelectItem value="secretary">Secretária</UISelectItem>
+                                                    <UISelectItem value="counselor">Conselheiro</UISelectItem>
+                                                    <UISelectItem value="member">Membro</UISelectItem>
+                                                </UISelectContent>
+                                            </UISelect>
+                                            
+                                            {p.role === 'counselor' && (
+                                                <UISelect value={p.unit_id || "none"} onValueChange={(val) => handleUpdateUserProfile(p.id, { unit_id: val === "none" ? null : val })}>
+                                                    <UISelectTrigger className="w-[160px]">
+                                                        <UISelectValue placeholder="Sem Unidade" />
+                                                    </UISelectTrigger>
+                                                    <UISelectContent>
+                                                        <UISelectItem value="none">Sem Unidade</UISelectItem>
+                                                        {units?.map(u => (
+                                                            <UISelectItem key={u.id} value={u.id}>{u.name}</UISelectItem>
+                                                        ))}
+                                                    </UISelectContent>
+                                                </UISelect>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <p className="text-muted-foreground text-center">Nenhum perfil encontrado.</p>
                         )}
                     </CardContent>
                 </Card>

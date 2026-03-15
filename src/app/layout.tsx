@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
 import { AuthProvider } from '@/hooks/use-auth';
+import { ClubProvider } from '@/hooks/use-club';
 import { ThemeProvider } from '@/components/theme-provider';
 import type { AppSettings } from '@/lib/types';
 
@@ -61,14 +62,16 @@ export default async function RootLayout({
           defaultTheme="theme-retro-dark"
         >
           <AuthProvider>
-            <SplashScreen clubName={settings.clubName} />
-            <div className="flex flex-col sm:flex-row min-h-screen">
-              <SidebarNav clubName={settings.clubName} />
-              <div className="flex-grow flex flex-col min-h-screen">
-                {children}
-                <BottomNav />
+            <ClubProvider>
+              <SplashScreen clubName={settings.clubName} />
+              <div className="flex flex-col sm:flex-row min-h-screen">
+                <SidebarNav clubName={settings.clubName} />
+                <div className="flex-grow flex flex-col min-h-screen">
+                  {children}
+                  <BottomNav />
+                </div>
               </div>
-            </div>
+            </ClubProvider>
           </AuthProvider>
           <Toaster />
         </ThemeProvider>
