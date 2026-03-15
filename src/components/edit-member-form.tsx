@@ -10,6 +10,8 @@ import type { Member } from "@/lib/types";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Trash2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { getClassByAge } from "@/lib/utils";
+import { useEffect, useRef } from "react";
 
 const formSchema = z.object({
   name: z.string().min(2, { message: "O nome deve ter pelo menos 2 caracteres." }),
@@ -38,6 +40,24 @@ export default function EditMemberForm({ member, onMemberUpdate, onMemberDelete,
       avatarUrl: member.avatarUrl || '',
     },
   });
+
+  const ageData = form.watch("age");
+  const isInitialMount = useRef(true);
+
+  useEffect(() => {
+    // Skip the first run to not override existing data when opening the form
+    if (isInitialMount.current) {
+        isInitialMount.current = false;
+        return;
+    }
+    
+    if (ageData) {
+      const suggestedClass = getClassByAge(Number(ageData));
+      if (suggestedClass && classes.includes(suggestedClass)) {
+        form.setValue("className", suggestedClass);
+      }
+    }
+  }, [ageData, classes, form]);
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     onMemberUpdate({ ...member, ...values });

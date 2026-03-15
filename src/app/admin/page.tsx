@@ -39,6 +39,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { Skeleton } from '@/components/ui/skeleton';
 import { defaultScoringCriteria, defaultRanks, defaultRoles, defaultClasses } from '@/lib/data';
 import { getRanks } from '@/lib/ranks';
+import { getClassByAge } from '@/lib/utils';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -311,6 +312,58 @@ export default function AdminPage() {
     });
   };
 
+  const handleSyncClassesByAge = async () => {
+    if (!units) return;
+    
+    setIsAuthLoading(true);
+    let updatedCount = 0;
+    
+    try {
+      // 1. Gather all members
+      const allMembers: any[] = units.flatMap(u => u.members || []);
+      
+      const updatePromises = allMembers.map(async (member) => {
+        const suggestedClass = getClassByAge(member.age);
+        if (suggestedClass && member.className !== suggestedClass) {
+          const { error } = await supabase
+            .from('members')
+            .update({ class_name: suggestedClass })
+            .eq('id', member.id);
+            
+          if (!error) updatedCount++;
+          return error;
+        }
+        return null;
+      });
+      
+      await Promise.all(updatePromises);
+      
+      // 2. Ensure "Agrupadas" is in the managed classes if needed
+      if (managedClasses && !managedClasses.includes("Agrupadas")) {
+         const newClasses = [...managedClasses, "Agrupadas"];
+         setManagedClasses(newClasses);
+         await supabase.from('units').update({ classes: newClasses }).in('id', units.map(u => u.id));
+      }
+
+      toast({
+        title: "Sincronização Concluída",
+        description: `${updatedCount} membros tiveram suas classes atualizadas.`,
+      });
+      
+      // Refresh data
+      router.refresh();
+      
+    } catch (err: any) {
+      toast({
+        variant: 'destructive',
+        title: "Erro na sincronização",
+        description: err.message,
+      });
+    } finally {
+      setIsAuthLoading(false);
+    }
+  };
+
   const handleGlobalExport = () => {
     if (!units) return;
 
@@ -376,7 +429,7 @@ export default function AdminPage() {
 
   if (isGlobalAuthLoading) {
     return (
-        <main className="flex flex-col items-center justify-center min-h-screen p-4 bg-background">
+        <main className="flex flex-col items-center justify-center min-h-screen p-4 bg-background pb-24">
             <Skeleton className="h-12 w-48 mb-4" />
             <Skeleton className="h-64 w-full max-w-md rounded-lg" />
         </main>
@@ -385,7 +438,7 @@ export default function AdminPage() {
 
   if (!user) {
     return (
-        <main className="flex flex-col items-center min-h-screen p-4 sm:p-8 bg-background">
+        <main className="flex flex-col items-center min-h-screen p-4 sm:p-8 bg-background pb-24">
             <header className="w-full max-w-xl flex items-start mb-8 sm:mb-12">
                 <Button variant="outline" size="icon" asChild>
                 <Link href="/" aria-label="Voltar para o início">
@@ -503,10 +556,14 @@ export default function AdminPage() {
             <p className="text-lg text-muted-foreground mt-2">
             Gerencie as configurações do aplicativo aqui.
             </p>
-            <div className="flex justify-center mt-6">
+            <div className="flex flex-col sm:flex-row justify-center mt-6 gap-4">
                 <Button onClick={handleGlobalExport} variant="secondary" className="flex items-center gap-2">
                     <Download className="h-4 w-4" />
                     Gerar Relatório Geral (Global)
+                </Button>
+                <Button onClick={handleSyncClassesByAge} variant="outline" className="flex items-center gap-2 border-primary/50 text-primary hover:bg-primary/10">
+                    <Star className="h-4 w-4" />
+                    Sincronizar Classes por Idade (Automático)
                 </Button>
             </div>
         </div>
@@ -702,13 +759,27 @@ export default function AdminPage() {
               <div className="space-y-2">
                 {managedRoles === null && <Skeleton className="h-10 w-full" />}
                 {managedRoles && managedRoles.map(role => (
-                  <div key={role} className="flex items-center justify-between p-2 border rounded-lg bg-card/50">
+                  <div key={role} className="flex items-center justify-between p-2 border rounded-lg bg-card/50 text-left">
                     <span>{role}</span>
-                    <Button variant="ghost" size="icon" onClick={() => {
-                      setManagedRoles(managedRoles.filter(r => r !== role));
-                    }}>
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
+                    <div className="flex items-center gap-1">
+                      <RenameItemDialog 
+                        currentName={role}
+                        onRename={(newName) => {
+                          if (managedRoles.includes(newName)) {
+                            toast({ variant: 'destructive', title: "Erro!", description: "Esta função já existe." });
+                            return;
+                          }
+                          setManagedRoles(managedRoles.map(r => r === role ? newName : r));
+                        }}
+                        triggerButton={<Button variant="ghost" size="icon" className="h-8 w-8"><Edit className="h-4 w-4" /></Button>}
+                        title="Editar Função"
+                      />
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => {
+                        setManagedRoles(managedRoles.filter(r => r !== role));
+                      }}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -762,13 +833,27 @@ export default function AdminPage() {
               <div className="space-y-2">
                 {managedClasses === null && <Skeleton className="h-10 w-full" />}
                 {managedClasses && managedClasses.map(cls => (
-                  <div key={cls} className="flex items-center justify-between p-2 border rounded-lg bg-card/50">
+                  <div key={cls} className="flex items-center justify-between p-2 border rounded-lg bg-card/50 text-left">
                     <span>{cls}</span>
-                    <Button variant="ghost" size="icon" onClick={() => {
-                      setManagedClasses(managedClasses.filter(c => c !== cls));
-                    }}>
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
+                    <div className="flex items-center gap-1">
+                      <RenameItemDialog 
+                        currentName={cls}
+                        onRename={(newName) => {
+                          if (managedClasses.includes(newName)) {
+                            toast({ variant: 'destructive', title: "Erro!", description: "Esta classe já existe." });
+                            return;
+                          }
+                          setManagedClasses(managedClasses.map(c => c === cls ? newName : c));
+                        }}
+                        triggerButton={<Button variant="ghost" size="icon" className="h-8 w-8"><Edit className="h-4 w-4" /></Button>}
+                        title="Editar Classe"
+                      />
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => {
+                        setManagedClasses(managedClasses.filter(c => c !== cls));
+                      }}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -994,6 +1079,61 @@ function RankFormDialog({ triggerButton, onSave, existingRank }: { triggerButton
     </Dialog>
   );
 }
+
+function RenameItemDialog({ 
+  currentName, 
+  onRename, 
+  triggerButton, 
+  title 
+}: { 
+  currentName: string, 
+  onRename: (newName: string) => void, 
+  triggerButton: React.ReactElement,
+  title: string
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [name, setName] = useState(currentName);
+
+  useEffect(() => {
+    if (isOpen) setName(currentName);
+  }, [isOpen, currentName]);
+
+  const handleSave = () => {
+    const trimmedName = name.trim();
+    if (trimmedName && trimmedName !== currentName) {
+      onRename(trimmedName);
+    }
+    setIsOpen(false);
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogTrigger asChild>{triggerButton}</DialogTrigger>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>
+            Altere o nome do item abaixo.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="py-4">
+          <Label htmlFor="rename-input" className="sr-only">Nome</Label>
+          <Input 
+            id="rename-input"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleSave()}
+          />
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setIsOpen(false)}>Cancelar</Button>
+          <Button onClick={handleSave}>Salvar</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
     
 
     

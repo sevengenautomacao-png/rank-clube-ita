@@ -8,6 +8,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import type { Member } from "@/lib/types";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { getClassByAge } from "@/lib/utils";
+import { useEffect } from "react";
 
 const formSchema = z.object({
   name: z.string().min(2, { message: "O nome deve ter pelo menos 2 caracteres." }),
@@ -34,6 +36,17 @@ export default function AddMemberForm({ onMemberAdd, roles = [], classes = [] }:
       avatarUrl: "",
     },
   });
+  
+  const age = form.watch("age");
+
+  useEffect(() => {
+    if (age) {
+      const suggestedClass = getClassByAge(Number(age));
+      if (suggestedClass && classes.includes(suggestedClass)) {
+        form.setValue("className", suggestedClass);
+      }
+    }
+  }, [age, classes, form]);
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     onMemberAdd(values);

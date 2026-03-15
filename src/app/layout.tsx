@@ -29,6 +29,8 @@ export const metadata: Metadata = {
   manifest: '/manifest',
 };
 
+import { BottomNav } from '@/components/bottom-nav';
+
 export default async function RootLayout({
   children,
 }: Readonly<{
@@ -40,6 +42,7 @@ export default async function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover" />
         <meta name="theme-color" content="#facc15" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -49,13 +52,16 @@ export default async function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;700&display=swap" rel="stylesheet" />
       </head>
-      <body>
+      <body className="antialiased min-h-screen">
         <ThemeProvider
           attribute="class"
           defaultTheme="theme-retro-dark"
         >
           <AuthProvider>
-            {children}
+            <div className="flex flex-col min-h-screen">
+              {children}
+            </div>
+            <BottomNav />
           </AuthProvider>
           <Toaster />
         </ThemeProvider>

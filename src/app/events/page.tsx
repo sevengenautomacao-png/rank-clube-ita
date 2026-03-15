@@ -146,7 +146,7 @@ export default function CalendarPage() {
             </Link>
             <h1 className="text-xl font-bold flex items-center gap-2">
               <CalendarIcon className="h-6 w-6 text-primary" />
-              Calendário do Clube
+              Agenda do Clube
             </h1>
           </div>
 
@@ -184,7 +184,7 @@ export default function CalendarPage() {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4 py-8 pb-24">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Calendar Sidebar */}
           <div className="lg:col-span-1 space-y-6">
