@@ -105,7 +105,7 @@ export default function AdminPage() {
           clubName: appSettings.clubName || 'ITA'
         });
     }
-  }, [appSettings, appSettingsForm]);
+  }, [appSettings, appSettingsForm.reset]);
 
   useEffect(() => {
     if (units && units.length > 0) {
@@ -454,7 +454,7 @@ export default function AdminPage() {
     refetchProfiles();
   };
 
-  if (isGlobalAuthLoading || isProfilesLoading) {
+  if ((isGlobalAuthLoading && !user) || (isProfilesLoading && !profiles)) {
     return (
         <main className="flex flex-col items-center justify-center min-h-screen p-4 bg-background pb-24">
             <Skeleton className="h-12 w-48 mb-4" />

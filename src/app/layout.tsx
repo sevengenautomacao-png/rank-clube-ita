@@ -64,9 +64,9 @@ export default async function RootLayout({
           <AuthProvider>
             <ClubProvider>
               <SplashScreen clubName={settings.clubName} />
-              <div className="flex flex-col sm:flex-row min-h-screen">
+              <div className="flex flex-col sm:flex-row min-h-screen overflow-x-hidden">
                 <SidebarNav clubName={settings.clubName} />
-                <div className="flex-grow flex flex-col min-h-screen">
+                <div className="flex-grow flex flex-col min-w-0 relative">
                   {children}
                   <BottomNav />
                 </div>

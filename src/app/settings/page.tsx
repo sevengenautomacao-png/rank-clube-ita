@@ -73,17 +73,16 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className={cn("flex flex-col min-h-screen pb-24 sm:pb-0 mx-auto w-full", fontClassName)}>
-      <main className="flex-grow flex flex-col items-center w-full p-4 sm:p-8 bg-background">
-        <header className="w-full max-w-3xl text-center py-6 sm:py-10 uppercase">
+    <div className={cn("min-h-full bg-background pb-32 sm:pb-8", fontClassName)}>
+      <main className="container mx-auto max-w-3xl px-4 sm:px-8 flex flex-col items-center">
+        <header className="w-full text-center py-6 sm:py-10 uppercase">
           <h1 className="text-4xl sm:text-7xl font-bold text-primary font-headline tracking-tighter drop-shadow-sm">
             Configurações
           </h1>
           <p className="text-muted-foreground mt-2 normal-case text-lg">Personalize sua experiência no app.</p>
         </header>
 
-        <div className="w-full max-w-3xl space-y-8">
-
+        <div className="w-full space-y-8">
           {/* === LOGIN / CONTA === */}
           <Card>
             <CardHeader>
