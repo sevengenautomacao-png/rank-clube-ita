@@ -121,7 +121,7 @@ export default function AddEventForm({ onEventAdd, units = [], initialType = 'cl
             render={({ field }) => (
               <FormItem className="flex flex-col">
                 <FormLabel>Data</FormLabel>
-                <Popover>
+                <Popover modal={false}>
                   <PopoverTrigger asChild>
                     <FormControl>
                       <Button
@@ -136,11 +136,15 @@ export default function AddEventForm({ onEventAdd, units = [], initialType = 'cl
                         ) : (
                           <span>Selecione uma data</span>
                         )}
-                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50 pointer-events-none" />
                       </Button>
                     </FormControl>
                   </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
+                  <PopoverContent 
+                    className="w-auto p-0" 
+                    align="start"
+                    onOpenAutoFocus={(e) => e.preventDefault()}
+                  >
                     <Calendar
                       mode="single"
                       selected={field.value}
@@ -165,8 +169,8 @@ export default function AddEventForm({ onEventAdd, units = [], initialType = 'cl
                 <FormLabel>Horário (Opcional)</FormLabel>
                 <FormControl>
                   <div className="relative">
-                    <Clock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input type="time" className="pl-9" placeholder="Ex: 09:00" {...field} />
+                    <Clock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground pointer-events-none" />
+                    <Input type="time" className="pl-9" {...field} />
                   </div>
                 </FormControl>
                 <FormMessage />
@@ -183,7 +187,7 @@ export default function AddEventForm({ onEventAdd, units = [], initialType = 'cl
               <FormLabel>Local (Opcional)</FormLabel>
               <FormControl>
                 <div className="relative">
-                  <MapPin className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <MapPin className="absolute left-3 top-3 h-4 w-4 text-muted-foreground pointer-events-none" />
                   <Input className="pl-9" placeholder="Ex: Sede do Clube" {...field} />
                 </div>
               </FormControl>

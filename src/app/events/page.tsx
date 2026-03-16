@@ -159,7 +159,11 @@ export default function CalendarPage() {
                     Novo Evento
                   </Button>
                 </SheetTrigger>
-                <SheetContent side="right" className="w-[400px] sm:w-[540px]">
+                <SheetContent 
+                  side="right" 
+                  className="w-[400px] sm:w-[540px]"
+                  onOpenAutoFocus={(e) => e.preventDefault()}
+                >
                   <SheetHeader>
                     <SheetTitle>Adicionar Eventos</SheetTitle>
                     <SheetDescription>
