@@ -39,9 +39,6 @@ export function useSupabaseTable<T>(table: string, queryParams?: { select?: stri
 
   const { activeClub, isLoadingClub } = useClub();
 
-  useEffect(() => {
-    if (isLoadingClub) return;
-
   async function fetchData() {
     setLoading(true);
     try {
