@@ -50,18 +50,20 @@ type AddEventFormProps = {
   units?: Unit[];
   initialType?: EventType;
   initialUnitId?: string;
+  initialDate?: Date;
+  allowedTypes?: EventType[];
 };
 
-export default function AddEventForm({ onEventAdd, units = [], initialType = 'club', initialUnitId }: AddEventFormProps) {
+export default function AddEventForm({ onEventAdd, units = [], initialType = 'club', initialUnitId, initialDate, allowedTypes }: AddEventFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       title: '',
       description: '',
-      date: new Date(),
+      date: initialDate || new Date(),
       time: '',
       location: '',
-      type: initialType,
+      type: allowedTypes && allowedTypes.length > 0 ? allowedTypes[0] : initialType,
       unitId: initialUnitId || '',
     },
   });
@@ -164,7 +166,7 @@ export default function AddEventForm({ onEventAdd, units = [], initialType = 'cl
                 <FormControl>
                   <div className="relative">
                     <Clock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input className="pl-9" placeholder="Ex: 09:00" {...field} />
+                    <Input type="time" className="pl-9" placeholder="Ex: 09:00" {...field} />
                   </div>
                 </FormControl>
                 <FormMessage />
@@ -197,16 +199,20 @@ export default function AddEventForm({ onEventAdd, units = [], initialType = 'cl
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Tipo de Evento</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select 
+                  onValueChange={field.onChange} 
+                  defaultValue={field.value}
+                  disabled={allowedTypes?.length === 1}
+                >
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione o tipo" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="club">Clube (Geral)</SelectItem>
-                    <SelectItem value="unit">Unidade</SelectItem>
-                    <SelectItem value="extra">Extra / Especial</SelectItem>
+                    {(!allowedTypes || allowedTypes.includes('club')) && <SelectItem value="club">Clube (Geral)</SelectItem>}
+                    {(!allowedTypes || allowedTypes.includes('unit')) && <SelectItem value="unit">Unidade</SelectItem>}
+                    {(!allowedTypes || allowedTypes.includes('extra')) && <SelectItem value="extra">Extra / Especial</SelectItem>}
                   </SelectContent>
                 </Select>
                 <FormMessage />

@@ -49,7 +49,7 @@ export default function CalendarPage() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [isAddSheetOpen, setIsAddSheetOpen] = useState(false);
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { toast } = useToast();
 
   const { data: eventsCombined, loading: eventsLoading } = useSupabaseTable<ClubEvent>('events', {
@@ -150,7 +150,7 @@ export default function CalendarPage() {
             </h1>
           </div>
 
-          {user && (
+          {profile && ['admin', 'secretary', 'counselor'].includes(profile.role) && (
             <div className="w-full sm:w-auto flex justify-end">
               <Sheet open={isAddSheetOpen} onOpenChange={setIsAddSheetOpen}>
                 <SheetTrigger asChild>
@@ -163,22 +163,41 @@ export default function CalendarPage() {
                   <SheetHeader>
                     <SheetTitle>Adicionar Eventos</SheetTitle>
                     <SheetDescription>
-                      Crie eventos manualmente ou importe via planilha.
+                      {['admin', 'secretary'].includes(profile.role) 
+                        ? "Crie eventos manualmente ou importe via planilha."
+                        : "Crie eventos de unidade manualmente."}
                     </SheetDescription>
                   </SheetHeader>
                   
-                  <Tabs defaultValue="manual" className="mt-6">
-                    <TabsList className="grid w-full grid-cols-2">
-                      <TabsTrigger value="manual">Manual</TabsTrigger>
-                      <TabsTrigger value="bulk">Planilha</TabsTrigger>
-                    </TabsList>
-                    <TabsContent value="manual">
-                      <AddEventForm onEventAdd={handleAddEvent} units={units || []} />
-                    </TabsContent>
-                    <TabsContent value="bulk">
-                      <SpreadsheetUpload onEventsUpload={handleBulkUpload} units={units || []} />
-                    </TabsContent>
-                  </Tabs>
+                  {['admin', 'secretary'].includes(profile.role) ? (
+                    <Tabs defaultValue="manual" className="mt-6">
+                      <TabsList className="grid w-full grid-cols-2">
+                        <TabsTrigger value="manual">Manual</TabsTrigger>
+                        <TabsTrigger value="bulk">Planilha</TabsTrigger>
+                      </TabsList>
+                      <TabsContent value="manual">
+                        <AddEventForm 
+                          key={isAddSheetOpen ? 'open' : 'closed'} 
+                          onEventAdd={handleAddEvent} 
+                          units={units || []} 
+                          initialDate={selectedDate}
+                        />
+                      </TabsContent>
+                      <TabsContent value="bulk">
+                        <SpreadsheetUpload onEventsUpload={handleBulkUpload} units={units || []} />
+                      </TabsContent>
+                    </Tabs>
+                  ) : (
+                    <div className="mt-6">
+                      <AddEventForm 
+                        key={isAddSheetOpen ? 'open' : 'closed'} 
+                        onEventAdd={handleAddEvent} 
+                        units={units || []} 
+                        initialDate={selectedDate}
+                        allowedTypes={['unit']}
+                      />
+                    </div>
+                  )}
                 </SheetContent>
               </Sheet>
             </div>
