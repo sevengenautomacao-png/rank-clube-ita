@@ -45,7 +45,7 @@ export function useSupabaseTable<T>(table: string, queryParams?: { select?: stri
       let query = supabase.from(table).select(queryParams?.select || '*');
       
       // Auto-filter by active club for mapped tables
-      const clubTables = ['units', 'events', 'members', 'score_logs', 'settings', 'profiles'];
+      const clubTables = ['units', 'events', 'members', 'score_logs'];
       if (clubTables.includes(table) && activeClub?.id) {
         query = query.eq('club_id', activeClub.id);
       }
@@ -93,7 +93,7 @@ export function useSupabaseDoc<T>(table: string, id: string, queryParams?: { sel
         let query = supabase.from(table).select(queryParams?.select || '*').eq('id', id);
 
         // Auto-filter by active club stringently
-        const clubTables = ['units', 'events', 'members', 'score_logs', 'settings', 'profiles'];
+        const clubTables = ['units', 'events', 'members', 'score_logs'];
         if (clubTables.includes(table) && activeClub?.id) {
           query = query.eq('club_id', activeClub.id);
         }

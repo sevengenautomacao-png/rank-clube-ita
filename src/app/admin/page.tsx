@@ -454,7 +454,8 @@ export default function AdminPage() {
     refetchProfiles();
   };
 
-  if ((isGlobalAuthLoading && !user) || (isProfilesLoading && !profiles)) {
+  // 1. Wait for auth to initialize or if global tables are still loading
+  if (isGlobalAuthLoading || isProfilesLoading) {
     return (
         <main className="flex flex-col items-center justify-center min-h-screen p-4 bg-background pb-24">
             <Skeleton className="h-12 w-48 mb-4" />
@@ -463,6 +464,7 @@ export default function AdminPage() {
     )
   }
 
+  // 2. Unauthenticated user - show login
   if (!user) {
     return (
         <main className="flex flex-col items-center min-h-screen p-4 sm:p-8 bg-background pb-24">
@@ -562,7 +564,8 @@ export default function AdminPage() {
     );
   }
 
-  if (currentUserProfile && !['admin', 'secretary'].includes(currentUserProfile.role)) {
+  // 3. Authenticated user but lacks admin profile - Deny Access
+  if (!currentUserProfile || !['admin', 'secretary'].includes(currentUserProfile.role)) {
      return (
         <main className="flex flex-col items-center min-h-screen p-4 sm:p-8 bg-background pb-24">
             <header className="w-full max-w-xl flex items-start mb-8 sm:mb-12">
@@ -575,12 +578,14 @@ export default function AdminPage() {
             <div className="w-full max-w-md text-center mt-12">
                 <ShieldAlert className="h-16 w-16 text-destructive mx-auto mb-4" />
                 <h1 className="text-3xl font-bold font-headline text-destructive mb-2">Acesso Negado</h1>
-                <p className="text-muted-foreground">Sua conta ({currentUserProfile.email}) não tem permissão para acessar o painel administrativo do clube.</p>
+                <p className="text-muted-foreground">Sua conta ({user?.email}) não tem permissão para acessar o painel administrativo do clube.</p>
                 <Button variant="outline" onClick={handleSignOut} className="mt-8">Sair da Conta</Button>
             </div>
         </main>
      )
   }
+
+  // 4. Fully Authorized Admin Dashboard
 
   return (
     <main className="flex flex-col items-center min-h-screen p-4 sm:p-8 bg-background">
