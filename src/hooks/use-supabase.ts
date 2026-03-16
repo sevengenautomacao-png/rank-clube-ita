@@ -42,40 +42,42 @@ export function useSupabaseTable<T>(table: string, queryParams?: { select?: stri
   useEffect(() => {
     if (isLoadingClub) return;
 
-    async function fetchData() {
-      setLoading(true);
-      try {
-        let query = supabase.from(table).select(queryParams?.select || '*');
-        
-        // Auto-filter by active club for mapped tables
-        const clubTables = ['units', 'events', 'members', 'score_logs', 'settings'];
-        if (clubTables.includes(table) && activeClub?.id) {
-          query = query.eq('club_id', activeClub.id);
-        }
-
-        if (queryParams?.filter) {
-          query = query.eq(queryParams.filter[0], queryParams.filter[1]);
-        }
-        
-        if (queryParams?.order) {
-          query = query.order(queryParams.order[0], queryParams.order[1]);
-        }
-
-        const { data, error } = await query;
-        if (error) throw error;
-        
-        setData(toCamelCase(data));
-      } catch (err) {
-        setError(err);
-      } finally {
-        setLoading(false);
+  async function fetchData() {
+    setLoading(true);
+    try {
+      let query = supabase.from(table).select(queryParams?.select || '*');
+      
+      // Auto-filter by active club for mapped tables
+      const clubTables = ['units', 'events', 'members', 'score_logs', 'settings'];
+      if (clubTables.includes(table) && activeClub?.id) {
+        query = query.eq('club_id', activeClub.id);
       }
-    }
 
+      if (queryParams?.filter) {
+        query = query.eq(queryParams.filter[0], queryParams.filter[1]);
+      }
+      
+      if (queryParams?.order) {
+        query = query.order(queryParams.order[0], queryParams.order[1]);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+      
+      setData(toCamelCase(data));
+    } catch (err) {
+      setError(err);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    if (isLoadingClub) return;
     fetchData();
   }, [table, JSON.stringify(queryParams), activeClub?.id, isLoadingClub]);
 
-  return { data, loading, error };
+  return { data, loading, error, refetch: fetchData };
 }
 
 export function useSupabaseDoc<T>(table: string, id: string, queryParams?: { select?: string }) {

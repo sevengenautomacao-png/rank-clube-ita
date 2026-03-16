@@ -86,7 +86,7 @@ export default function AdminPage() {
     select: '*, members(*), score_logs(*)'
   });
 
-  const { data: profiles, loading: isProfilesLoading } = useSupabaseTable<UserProfile>('profiles');
+  const { data: profiles, loading: isProfilesLoading, refetch: refetchProfiles } = useSupabaseTable<UserProfile>('profiles');
 
   const { data: appSettings } = useSupabaseDoc<AppSettings>('settings', 'app');
 
@@ -450,6 +450,8 @@ export default function AdminPage() {
       title: "Perfil Atualizado",
       description: "Os acessos do usuário foram atualizados com sucesso.",
     });
+
+    refetchProfiles();
   };
 
   if (isGlobalAuthLoading || isProfilesLoading) {
@@ -809,7 +811,7 @@ export default function AdminPage() {
                                             </UISelect>
                                             
                                             {p.role === 'counselor' && (
-                                                <UISelect value={p.unit_id || "none"} onValueChange={(val) => handleUpdateUserProfile(p.id, { unit_id: val === "none" ? null : val })}>
+                                                <UISelect value={(p as any).unitId || "none"} onValueChange={(val) => handleUpdateUserProfile(p.id, { unit_id: val === "none" ? null : val })}>
                                                     <UISelectTrigger className="w-[160px]">
                                                         <UISelectValue placeholder="Sem Unidade" />
                                                     </UISelectTrigger>
